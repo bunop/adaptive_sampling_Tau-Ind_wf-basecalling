@@ -6,6 +6,7 @@ demux/
 output_*
 reference*
 genome*
+.tmp/
 
 # nextflow gitignore file
 .nextflow*
