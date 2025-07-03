@@ -1,0 +1,4 @@
+*.rmarkdown
+*.html
+*_cache/
+*_files/
