@@ -29,12 +29,12 @@ library("dplyr")
 ## Read data from methylong output
 
 Directly filter out data (since it's very large) using `awk` to keep only rows
-with `score > 100` and `count_modified > 0`. This will reduce the size of the
+with `score >= 10` and `count_modified > 0`. This will reduce the size of the
 data significantly before loading it into R.
 
 ```{r read-data}
 file_path <- here::here("output_methylong_combined/ont/A19_jun/pileup", "A19_jun.bed.gz")
-cmd <- sprintf("zcat %s | awk 'NR==1 || ($5 > 100 && $12 > 0)'", shQuote(file_path))
+cmd <- sprintf("zcat %s | awk 'NR==1 || ($5 >= 10 && $12 > 0)'", shQuote(file_path))
 bed100 <- data.table::fread(cmd = cmd, sep = "\t", header = TRUE)
 summary(bed100)
 ```

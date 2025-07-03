@@ -1,6 +1,11 @@
 
 # Adaptive sampling Tau-Ind
 
+Basecalling workflow using `wf-basecalling` and `nf-core/methylong`
+pipelines for the `adaptive_sampling_Tau-Ind` dataset. Using
+`dna_r10.4.1_e8.2_400bps_sup@v5.2.0_5mC_5hmC@v1` model for
+basecalling.
+
 ## Update models
 
 To update the models, run the following command:
