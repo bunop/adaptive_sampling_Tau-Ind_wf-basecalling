@@ -1,0 +1,34 @@
+---
+title: "Motif Test"
+author: "Paolo Cozzi"
+date: today
+toc: true
+number-sections: true
+cache: true
+format:
+  html:
+    code-line-numbers: true
+    html-math-method: katex
+    df-print: paged
+    code-fold: true
+    toc-depth: 5
+    embed-resources: true  # Embed all resources directly into the HTML file
+knitr:
+  opts_chunk:
+    dpi: 100
+editor: source
+---
+
+```{r setup, warning=FALSE}
+library("here")
+library("data.table")
+library("ggplot2")
+library("dplyr")
+```
+
+## Read data from methylong output
+
+```{r read-data}
+bed <- data.table::fread(here::here("output_methylong_combined/ont/A19_jun/pileup", "A19_jun.bed.gz"), header=TRUE)
+summary(bed)
+```
