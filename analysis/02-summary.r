@@ -14,7 +14,7 @@ sample_path <- here::here(
 )
 
 # attempt to save data to a file
-db_dir <- here::here(sample_dir, "A19_jun.duckdb")
+db_dir <- here::here("analysis", "A19_jun.duckdb")
 con <- dbConnect(duckdb::duckdb(), dbdir = db_dir)
 
 # create the table if it does not exist
@@ -54,6 +54,7 @@ summary_valid_coverage <- dbGetQuery(con, "
     QUANTILE_CONT(valid_coverage, 0.25) AS first_quartile,
     QUANTILE_CONT(valid_coverage, 0.75) AS third_quartile
   FROM methylation
+  USING SAMPLE 1 PERCENT (bernoulli)
 ")
 
 cat("valid_coverage\n")
@@ -66,4 +67,4 @@ cat("   Max.   :", summary_valid_coverage$max_valid_coverage, "\n")
 cat("   SD     :", summary_valid_coverage$sd_valid_coverage, "\n")
 cat("   N      :", summary_valid_coverage$n, "\n")
 
-dbDisconnect(con, shutdown=TRUE)
+dbDisconnect(con, shutdown = TRUE)

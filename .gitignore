@@ -7,6 +7,8 @@ output_*
 reference*
 genome*
 .tmp/
+*.duckdb*
+*.bed*
 
 # nextflow gitignore file
 .nextflow*
