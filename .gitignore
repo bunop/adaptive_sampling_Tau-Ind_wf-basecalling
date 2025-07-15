@@ -2,8 +2,8 @@
 *.err
 *.out
 *.png
-demux/
-output_*
+demux*
+output*
 reference*
 genome*
 .tmp/

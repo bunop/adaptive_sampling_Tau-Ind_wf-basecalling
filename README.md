@@ -35,7 +35,7 @@ using:
 
 ```bash
 nextflow run ~/Projects/wf-basecalling/ -profile singularity -resume \
-    -c conf/custom.config -params-file conf/params.json
+    -c conf/custom.config -params-file conf/params-wf-basecalling-5mC_5hmC.json
 ```
 
 > NOTE: is not possible to call `--duplex=true` and `--barcode_kit=SQK-NBD114-24`
@@ -49,7 +49,7 @@ Calculate quality control metrics using `pycoQC`:
 
 ```bash
 singularity run $NXF_SINGULARITY_CACHEDIR/pip_pycoqc_setuptools_31d5a8754dcc1b68.sif \
-    pycoQC -f output/SAMPLE.summary.tsv.gz -o output/SAMPLE.summary.html
+    pycoQC -f output-5mC_5hmC/SAMPLE.summary.tsv.gz -o output-5mC_5hmC/SAMPLE.summary.html
 ```
 
 ### Join passed simplex and duplex reads
@@ -67,7 +67,7 @@ SAMPLE.pass.simplex.cram
 Let's join the `pass` reads into a single file:
 
 ```bash
-cd output
+cd output-5mC_5hmC
 singularity run $NXF_SINGULARITY_CACHEDIR/depot.galaxyproject.org-singularity-samtools-1.21--h50ea8bc_0.img \
     samtools merge -o SAMPLE.pass.all.cram SAMPLE.pass.duplex.cram SAMPLE.pass.simplex.cram
 singularity run $NXF_SINGULARITY_CACHEDIR/depot.galaxyproject.org-singularity-samtools-1.21--h50ea8bc_0.img \
@@ -81,8 +81,8 @@ Do demultiplexing using `dorado`:
 
 ```bash
 singularity run $NXF_SINGULARITY_CACHEDIR/ontresearch-dorado-shae9327ad17e023b76e4d27cf287b6b9d3a271092b.img \
-    dorado demux --kit-name SQK-NBD114-24 --threads 2 --verbose --output-dir demux \
-    --sample-sheet conf/samplesheet-wf-basecalling.csv output/SAMPLE.pass.all.cram
+    dorado demux --kit-name SQK-NBD114-24 --threads 2 --verbose --output-dir demux-5mC_5hmC \
+    --sample-sheet conf/samplesheet-wf-basecalling.csv output-5mC_5hmC/SAMPLE.pass.all.cram
 ```
 
 > NOTE: even if I merged all the data into a single file, `dorado` will
@@ -94,12 +94,12 @@ singularity run $NXF_SINGULARITY_CACHEDIR/ontresearch-dorado-shae9327ad17e023b76
 
 ### Preparing samples
 
-The three different runs are in the `demux` directory, so we need to prepare
+The three different runs are in the `demux-5mC_5hmC` directory, so we need to prepare
 the samples for `nf-core/methylong`. Let's create a new directory:
 
 ```bash
-mkdir -p $SCRATCH/adaptive_sampling_Tau-Ind_wf-basecalling/samples/
-ln -s $SCRATCH/adaptive_sampling_Tau-Ind_wf-basecalling/samples data/
+mkdir -p $SCRATCH/adaptive_sampling_Tau-Ind_wf-basecalling/samples-5mC_5hmC/
+ln -s $SCRATCH/adaptive_sampling_Tau-Ind_wf-basecalling/samples-5mC_5hmC data/
 sbatch scripts/merge-bam.sh
 ```
 

@@ -1,7 +1,7 @@
 sample,modbam,ref,method
-A19_jun,/g100_work/IscrC_BioGPUPX/adaptive_sampling_Tau-Ind_wf-basecalling/data/samples/A19_jun.bam,/g100_work/IscrC_BioGPUPX/adaptive_sampling_Tau-Ind_wf-basecalling/genome/GCF_002263795.3_ARS-UCD2.0_genomic.fa,ont
-A21_jun,/g100_work/IscrC_BioGPUPX/adaptive_sampling_Tau-Ind_wf-basecalling/data/samples/A21_jun.bam,/g100_work/IscrC_BioGPUPX/adaptive_sampling_Tau-Ind_wf-basecalling/genome/GCF_002263795.3_ARS-UCD2.0_genomic.fa,ont
-A25_jun,/g100_work/IscrC_BioGPUPX/adaptive_sampling_Tau-Ind_wf-basecalling/data/samples/A25_jun.bam,/g100_work/IscrC_BioGPUPX/adaptive_sampling_Tau-Ind_wf-basecalling/genome/GCF_002263795.3_ARS-UCD2.0_genomic.fa,ont
-N03_jun,/g100_work/IscrC_BioGPUPX/adaptive_sampling_Tau-Ind_wf-basecalling/data/samples/N03_jun.bam,/g100_work/IscrC_BioGPUPX/adaptive_sampling_Tau-Ind_wf-basecalling/genome/GCF_002263795.3_ARS-UCD2.0_genomic.fa,ont
-N07_jun,/g100_work/IscrC_BioGPUPX/adaptive_sampling_Tau-Ind_wf-basecalling/data/samples/N07_jun.bam,/g100_work/IscrC_BioGPUPX/adaptive_sampling_Tau-Ind_wf-basecalling/genome/GCF_002263795.3_ARS-UCD2.0_genomic.fa,ont
-N13_jun,/g100_work/IscrC_BioGPUPX/adaptive_sampling_Tau-Ind_wf-basecalling/data/samples/N13_jun.bam,/g100_work/IscrC_BioGPUPX/adaptive_sampling_Tau-Ind_wf-basecalling/genome/GCF_002263795.3_ARS-UCD2.0_genomic.fa,ont
+A19_jun,/g100_work/IscrC_BioGPUPX/adaptive_sampling_Tau-Ind_wf-basecalling/data/samples-5mC_5hmC/A19_jun.bam,/g100_work/IscrC_BioGPUPX/adaptive_sampling_Tau-Ind_wf-basecalling/genome/GCF_002263795.3_ARS-UCD2.0_genomic.fa,ont
+A21_jun,/g100_work/IscrC_BioGPUPX/adaptive_sampling_Tau-Ind_wf-basecalling/data/samples-5mC_5hmC/A21_jun.bam,/g100_work/IscrC_BioGPUPX/adaptive_sampling_Tau-Ind_wf-basecalling/genome/GCF_002263795.3_ARS-UCD2.0_genomic.fa,ont
+A25_jun,/g100_work/IscrC_BioGPUPX/adaptive_sampling_Tau-Ind_wf-basecalling/data/samples-5mC_5hmC/A25_jun.bam,/g100_work/IscrC_BioGPUPX/adaptive_sampling_Tau-Ind_wf-basecalling/genome/GCF_002263795.3_ARS-UCD2.0_genomic.fa,ont
+N03_jun,/g100_work/IscrC_BioGPUPX/adaptive_sampling_Tau-Ind_wf-basecalling/data/samples-5mC_5hmC/N03_jun.bam,/g100_work/IscrC_BioGPUPX/adaptive_sampling_Tau-Ind_wf-basecalling/genome/GCF_002263795.3_ARS-UCD2.0_genomic.fa,ont
+N07_jun,/g100_work/IscrC_BioGPUPX/adaptive_sampling_Tau-Ind_wf-basecalling/data/samples-5mC_5hmC/N07_jun.bam,/g100_work/IscrC_BioGPUPX/adaptive_sampling_Tau-Ind_wf-basecalling/genome/GCF_002263795.3_ARS-UCD2.0_genomic.fa,ont
+N13_jun,/g100_work/IscrC_BioGPUPX/adaptive_sampling_Tau-Ind_wf-basecalling/data/samples-5mC_5hmC/N13_jun.bam,/g100_work/IscrC_BioGPUPX/adaptive_sampling_Tau-Ind_wf-basecalling/genome/GCF_002263795.3_ARS-UCD2.0_genomic.fa,ont

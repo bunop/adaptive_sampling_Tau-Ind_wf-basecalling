@@ -1,6 +1,6 @@
 {
     "input": "conf/samplesheet-methylong.csv",
-    "outdir": "output_methylong_combined",
+    "outdir": "output_methylong-5mC_5hmC",
     "pileup_method": "modkit",
     "ont_aligner": "minimap2",
     "bedgraph": true

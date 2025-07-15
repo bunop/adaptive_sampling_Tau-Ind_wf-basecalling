@@ -5,7 +5,7 @@ library(duckdb)
 library(DBI)
 library(here)
 
-sample_dir <- "output_methylong_combined/ont/A19_jun/pileup"
+sample_dir <- "output_methylong-5mC_5hmC/ont/A19_jun/pileup"
 
 # this is the path to the file
 sample_path <- here::here(

@@ -17,11 +17,11 @@ SAMTOOLS="singularity run -B ${HOME} -B ${WORK} -B ${PWD} -B ${SCRATCH} ${NXF_SI
 CPUS=${SLURM_CPUS_PER_TASK:-1}
 
 for pattern in "A19_jun" "A21_jun" "A25_jun" "N03_jun" "N07_jun" "N13_jun" ; do
-    if [ ! -f data/samples/${pattern}.bam ]; then
-        $SAMTOOLS merge -@ ${CPUS} -o data/samples/${pattern}.bam demux/*${pattern}.bam
-        echo "data/samples/${pattern}.bam created"
+    if [ ! -f data/samples-5mC_5hmC/${pattern}.bam ]; then
+        $SAMTOOLS merge -@ ${CPUS} -o data/samples-5mC_5hmC/${pattern}.bam demux-5mC_5hmC/*${pattern}.bam
+        echo "data/samples-5mC_5hmC/${pattern}.bam created"
     else
-        echo "Skipping data/samples/${pattern}.bam (already exists)"
+        echo "Skipping data/samples-5mC_5hmC/${pattern}.bam (already exists)"
     fi
 done
 
