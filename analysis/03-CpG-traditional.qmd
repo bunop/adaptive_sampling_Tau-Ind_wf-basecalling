@@ -1,0 +1,99 @@
+---
+title: "CpG Traditional Analysis"
+author: "Paolo Cozzi"
+date: today
+toc: true
+number-sections: true
+cache: true
+format:
+  html:
+    code-line-numbers: true
+    html-math-method: katex
+    df-print: paged
+    code-fold: true
+    toc-depth: 5
+    embed-resources: true  # Embed all resources directly into the HTML file
+knitr:
+  opts_chunk:
+    dpi: 100
+editor: source
+---
+
+```{r setup, output=FALSE}
+library(here)
+library(GenomicRanges)
+library(rtracklayer)
+library(ggplot2)
+library(Gviz)
+```
+
+Importing bed file:
+
+```{r import-bed}
+bed_file <- here::here("bed/ARS-UCD2.0_CpG-Islands_unix_buffer_merged.bed")
+gpg_buffer <- rtracklayer::import.bed(bed_file)
+
+# let's check the first few rows
+head(gpg_buffer)
+```
+
+Importing bed file with methylation data:
+
+```{r import-methylation, cache=FALSE}
+# do not cache this chunk, is too big
+bedmethyl_file <- here::here("output_methylong-5mC_5hmC-traditional/ont/A19_jun/pileup/A19_jun.bed.gz")
+col_names <- c("chrom", "chromStart", "chromEnd", "name", "score", "strand", "thickStart", "thickEnd", "color", "valid_coverage", "percent_modified", "count_modified", "count_canonical", "count_other_mod", "count_delete", "count_fail", "count_diff", "count_nocall")
+col_types <- readr::cols(
+  chrom = readr::col_character(),
+  chromStart = readr::col_integer(),
+  chromEnd = readr::col_integer(),
+  name = readr::col_character(),
+  score = readr::col_integer(),
+  strand = readr::col_character(),
+  thickStart = readr::col_integer(),
+  thickEnd = readr::col_integer(),
+  color = readr::col_character(), # RGB triplet as string
+  valid_coverage = readr::col_integer(),
+  percent_modified = readr::col_double(),
+  count_modified = readr::col_integer(),
+  count_canonical = readr::col_integer(),
+  count_other_mod = readr::col_integer(),
+  count_delete = readr::col_integer(),
+  count_fail = readr::col_integer(),
+  count_diff = readr::col_integer(),
+  count_nocall = readr::col_integer()
+)
+bedMethyl <- readr::read_tsv(bedmethyl_file, col_names = col_names, col_types = col_types, comment = "#")
+bedMethyl$strand[bedMethyl$strand == "."] <- "*"
+head(bedMethyl)
+```
+
+Let's filter methylation data and focus on `gpg_buffer` regions: let's transform
+methylation `score` into a `GRanges` object and filter it based on the `gpg_buffer` regions.
+
+```{r filter-methylation-data}
+gr_methylation <- GRanges(
+  seqnames = bedMethyl$chrom,
+  ranges = IRanges(start = bedMethyl$chromStart+1, end = bedMethyl$chromEnd),
+  strand = bedMethyl$strand,
+  score = bedMethyl$score
+)
+hits <- GenomicRanges::findOverlaps(gr_methylation, gpg_buffer)
+filtered_methylation <- gr_methylation[queryHits(hits)]
+head(filtered_methylation)
+```
+
+Plot coverage of methylation data in `gpg_buffer` regions:
+
+```{r plot-coverage}
+coverage_data <- as.data.frame(mcols(filtered_methylation))
+
+ggplot(coverage_data, aes(y = score)) +
+  geom_boxplot(outlier.shape = NA, fill = "skyblue") +
+  scale_y_continuous(trans = "log10", limits = c(NA, 100)) +
+  labs(
+    title = "Distribution of Methylation Scores in CpG Buffer Regions",
+    y = "Methylation Coverage (log10 scale)"
+  ) +
+  theme_minimal()
+```
