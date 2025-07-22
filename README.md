@@ -74,15 +74,15 @@ Let's join the `pass` reads into a single file:
 ```bash
 cd output-5mC_5hmC
 singularity run $NXF_SINGULARITY_CACHEDIR/depot.galaxyproject.org-singularity-samtools-1.21--h50ea8bc_0.img \
-    samtools merge -o SAMPLE.pass.all.cram SAMPLE.pass.duplex.cram SAMPLE.pass.simplex.cram
+    samtools merge --threads 4 -o SAMPLE.pass.all.cram SAMPLE.pass.duplex.cram SAMPLE.pass.simplex.cram
 singularity run $NXF_SINGULARITY_CACHEDIR/depot.galaxyproject.org-singularity-samtools-1.21--h50ea8bc_0.img \
-    samtools index SAMPLE.pass.all.cram
+    samtools index --threads 4 SAMPLE.pass.all.cram
 cd ..
 cd output-5mCG_5hmCG
 singularity run $NXF_SINGULARITY_CACHEDIR/depot.galaxyproject.org-singularity-samtools-1.21--h50ea8bc_0.img \
-    samtools merge -o SAMPLE.pass.all.cram SAMPLE.pass.duplex.cram SAMPLE.pass.simplex.cram
+    samtools merge --threads 4 -o SAMPLE.pass.all.cram SAMPLE.pass.duplex.cram SAMPLE.pass.simplex.cram
 singularity run $NXF_SINGULARITY_CACHEDIR/depot.galaxyproject.org-singularity-samtools-1.21--h50ea8bc_0.img \
-    samtools index SAMPLE.pass.all.cram
+    samtools index --threads 4 SAMPLE.pass.all.cram
 cd ..
 ```
 
@@ -92,10 +92,10 @@ Do demultiplexing using `dorado`:
 
 ```bash
 singularity run $NXF_SINGULARITY_CACHEDIR/ontresearch-dorado-shae9327ad17e023b76e4d27cf287b6b9d3a271092b.img \
-    dorado demux --kit-name SQK-NBD114-24 --threads 2 --verbose --output-dir demux-5mC_5hmC \
+    dorado demux --kit-name SQK-NBD114-24 --threads 4 --verbose --output-dir demux-5mC_5hmC \
     --sample-sheet conf/samplesheet-wf-basecalling.csv output-5mC_5hmC/SAMPLE.pass.all.cram
 singularity run $NXF_SINGULARITY_CACHEDIR/ontresearch-dorado-shae9327ad17e023b76e4d27cf287b6b9d3a271092b.img \
-    dorado demux --kit-name SQK-NBD114-24 --threads 2 --verbose --output-dir demux-5mCG_5hmCG \
+    dorado demux --kit-name SQK-NBD114-24 --threads 4 --verbose --output-dir demux-5mCG_5hmCG \
     --sample-sheet conf/samplesheet-wf-basecalling.csv output-5mCG_5hmCG/SAMPLE.pass.all.cram
 ```
 
@@ -128,4 +128,5 @@ Run the `nf-core/methylong` pipeline using the following command:
 sbatch scripts/launch-methylong-5mC_5hmC.sh
 sbatch scripts/launch-methylong-5mC_5hmC-traditional.sh
 sbatch scripts/launch-methylong-5mCG_5hmCG.sh
+sbatch scripts/launch-methylong-5mCG_5hmCG-traditional.sh
 ```
