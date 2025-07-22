@@ -24,6 +24,7 @@ library(here)
 library(GenomicRanges)
 library(rtracklayer)
 library(ggplot2)
+library(hexbin)
 library(Gviz)
 ```
 
@@ -76,24 +77,53 @@ gr_methylation <- GRanges(
   seqnames = bedMethyl$chrom,
   ranges = IRanges(start = bedMethyl$chromStart+1, end = bedMethyl$chromEnd),
   strand = bedMethyl$strand,
-  score = bedMethyl$score
+  score = bedMethyl$score,
+  percent_modified = bedMethyl$percent_modified
 )
 hits <- GenomicRanges::findOverlaps(gr_methylation, gpg_buffer)
 filtered_methylation <- gr_methylation[queryHits(hits)]
 head(filtered_methylation)
+coverage_data <- as.data.frame(mcols(filtered_methylation))
+head(coverage_data)
 ```
 
 Plot coverage of methylation data in `gpg_buffer` regions:
 
-```{r plot-coverage}
-coverage_data <- as.data.frame(mcols(filtered_methylation))
-
+```{r plot-coverage-boxplot}
 ggplot(coverage_data, aes(y = score)) +
-  geom_boxplot(outlier.shape = NA, fill = "skyblue") +
+  geom_boxplot(fill = "skyblue") +
   scale_y_continuous(trans = "log10", limits = c(NA, 100)) +
   labs(
-    title = "Distribution of Methylation Scores in CpG Buffer Regions",
+    title = "Distribution of Scores (Coverage) in CpG Buffer Regions",
     y = "Methylation Coverage (log10 scale)"
+  ) +
+  theme_minimal()
+```
+
+Plot the distribution of percent modified methylation:
+
+```{r plot-percent-modified}
+ggplot(coverage_data, aes(y = percent_modified)) +
+  geom_boxplot(outlier.shape = NA, fill = "skyblue") +
+  labs(
+    title = "Distribution of Percent Modified Methylation",
+    y = "Percent Modified Methylation (%)"
+  ) +
+  theme_minimal()
+```
+
+Plot a hexbin plot of percent modified methylation vs coverage:
+
+```{r plot-percent-modified-coverage}
+ggplot(coverage_data, aes(x = score, y = percent_modified)) +
+  geom_hex(bins = 50) +
+  scale_x_log10() +
+  scale_fill_viridis_c(trans = "log10") +  # <--- Scala logaritmica sui conteggi
+  labs(
+    title = "Hexbin: Percent Modified vs Coverage (log10 scale)",
+    x = "Coverage (log10 scale)",
+    y = "Methylation (%)",
+    fill = "Count (log10)"
   ) +
   theme_minimal()
 ```
