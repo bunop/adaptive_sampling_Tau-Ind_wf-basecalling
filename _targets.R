@@ -10,6 +10,7 @@ library(crew)
 library(parallelly)
 library(here)
 library(readr)
+library(data.table)
 library(rtracklayer)
 
 # Set target options:
@@ -19,7 +20,9 @@ tar_option_set(
     "readr",
     "dplyr",
     "IRanges",
-    "GenomicRanges"
+    "GenomicRanges",
+    "ggplot2",
+    "quarto"
   ),
   # format = "qs", # Optionally set the default storage format. qs is fast.
   #
@@ -100,14 +103,45 @@ list(
     pattern = map(samplesheet)
   ),
   tar_target(
-    name = bedmethyl,
-    command = read_bedmethyl(
-      bedmethyl_file = bedmethyl_file$path,
-      sample = bedmethyl_file$sample,
-      filter_regions = gpg_buffer
-      # n_max = 1000 # debug
-    ),
+    name = bedmethyl_list,
+    command = {
+      bedmethyl <- read_bedmethyl(
+        bedmethyl_file = bedmethyl_file$path,
+        sample = bedmethyl_file$sample,
+        filter_regions = gpg_buffer
+        # n_max = 1000 # debug
+      )
+    },
     pattern = map(bedmethyl_file),
     iteration = "list"
+  ),
+  tar_target(
+    name = coverage_data,
+    command = {
+      # Combine the results from all bedmethyl targets into a single data frame
+      df_list <- lapply(bedmethyl_list, function(x) {
+        dt <- data.table::data.table(
+          sample = x$sample,
+          valid_coverage = x$gr_methylation$valid_coverage,
+          percent_modified = x$gr_methylation$percent_modified
+        )
+
+        # Sample 10,000 rows from each data.table
+        dt <- dt[sample(.N, 10000)]
+
+        # Add breed information based on sample name
+        dt[, breed := ifelse(
+          grepl("^N", sample), "Nellore",
+          ifelse(grepl("^A", sample), "Angus", NA)
+        )]
+      })
+      # Combine the list of data.tables into a single data.table
+      data.table::rbindlist(df_list, use.names = TRUE, fill = TRUE)
+    }
+  ),
+  tar_quarto(
+    name = cpg_traditional_report,
+    path = "analysis/03-CpG-traditional.qmd",
+    quiet = FALSE
   )
 )

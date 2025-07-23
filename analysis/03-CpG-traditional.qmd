@@ -21,109 +21,46 @@ editor: source
 
 ```{r setup, output=FALSE}
 library(here)
-library(GenomicRanges)
-library(rtracklayer)
+library(targets)
 library(ggplot2)
-library(hexbin)
-library(Gviz)
+
+# where I can find artifacts
+store_path <- here::here("_targets")
 ```
 
-Importing bed file:
+I've just read the *bedMethyl* files using `targets`, and then I've filtered them
+in order to focus on the regions of interest, which are the CpG islands with
+a certain buffer around them. Load data about `valid_coverage` and `percent_modified`
+for each samples from `5mC_5hmC` model and with `modkit --preset traditional`
+(should be only `CpG` sites): This is not the full dataset, but a subsample of
+10,000 rows per sample (to speed up the analysis).
 
-```{r import-bed}
-bed_file <- here::here("bed/ARS-UCD2.0_CpG-Islands_unix_buffer_merged.bed")
-gpg_buffer <- rtracklayer::import.bed(bed_file)
-
-# let's check the first few rows
-head(gpg_buffer)
+```{r load-data}
+tar_load(coverage_data, store = store_path)
+summary(coverage_data)
 ```
 
-Importing bed file with methylation data:
+Let's plot the distribution of `valid_coverage` accross all samples:
 
-```{r import-methylation, cache=FALSE}
-# do not cache this chunk, is too big
-bedmethyl_file <- here::here("output_methylong-5mC_5hmC-traditional/ont/A19_jun/pileup/A19_jun.bed.gz")
-col_names <- c("chrom", "chromStart", "chromEnd", "name", "score", "strand", "thickStart", "thickEnd", "color", "valid_coverage", "percent_modified", "count_modified", "count_canonical", "count_other_mod", "count_delete", "count_fail", "count_diff", "count_nocall")
-col_types <- readr::cols(
-  chrom = readr::col_character(),
-  chromStart = readr::col_integer(),
-  chromEnd = readr::col_integer(),
-  name = readr::col_character(),
-  score = readr::col_integer(),
-  strand = readr::col_character(),
-  thickStart = readr::col_integer(),
-  thickEnd = readr::col_integer(),
-  color = readr::col_character(), # RGB triplet as string
-  valid_coverage = readr::col_integer(),
-  percent_modified = readr::col_double(),
-  count_modified = readr::col_integer(),
-  count_canonical = readr::col_integer(),
-  count_other_mod = readr::col_integer(),
-  count_delete = readr::col_integer(),
-  count_fail = readr::col_integer(),
-  count_diff = readr::col_integer(),
-  count_nocall = readr::col_integer()
-)
-bedMethyl <- readr::read_tsv(bedmethyl_file, col_names = col_names, col_types = col_types, comment = "#")
-bedMethyl$strand[bedMethyl$strand == "."] <- "*"
-head(bedMethyl)
-```
-
-Let's filter methylation data and focus on `gpg_buffer` regions: let's transform
-methylation `score` into a `GRanges` object and filter it based on the `gpg_buffer` regions.
-
-```{r filter-methylation-data}
-gr_methylation <- GRanges(
-  seqnames = bedMethyl$chrom,
-  ranges = IRanges(start = bedMethyl$chromStart+1, end = bedMethyl$chromEnd),
-  strand = bedMethyl$strand,
-  score = bedMethyl$score,
-  percent_modified = bedMethyl$percent_modified
-)
-hits <- GenomicRanges::findOverlaps(gr_methylation, gpg_buffer)
-filtered_methylation <- gr_methylation[queryHits(hits)]
-head(filtered_methylation)
-coverage_data <- as.data.frame(mcols(filtered_methylation))
-head(coverage_data)
-```
-
-Plot coverage of methylation data in `gpg_buffer` regions:
-
-```{r plot-coverage-boxplot}
-ggplot(coverage_data, aes(y = score)) +
-  geom_boxplot(fill = "skyblue") +
-  scale_y_continuous(trans = "log10", limits = c(NA, 100)) +
-  labs(
-    title = "Distribution of Scores (Coverage) in CpG Buffer Regions",
-    y = "Methylation Coverage (log10 scale)"
+```{r plot-valid-coverage}
+ggplot2::ggplot(coverage_data, aes(y = valid_coverage, x = sample, fill = breed)) +
+  ggplot2::geom_boxplot() +
+  ggplot2::scale_y_log10(limits = c(NA, 100)) +
+  ggplot2::labs(
+    title = "Distribution of Valid Coverage in CpG Buffer Regions",
+    y = "Valid Coverage (log10 scale)",
   ) +
-  theme_minimal()
+  ggplot2::theme_minimal()
 ```
 
 Plot the distribution of percent modified methylation:
 
 ```{r plot-percent-modified}
-ggplot(coverage_data, aes(y = percent_modified)) +
-  geom_boxplot(outlier.shape = NA, fill = "skyblue") +
-  labs(
+ggplot(coverage_data, aes(y = percent_modified, x = sample, fill = breed)) +
+  ggplot2::geom_boxplot() +
+  ggplot2::labs(
     title = "Distribution of Percent Modified Methylation",
-    y = "Percent Modified Methylation (%)"
-  ) +
-  theme_minimal()
-```
-
-Plot a hexbin plot of percent modified methylation vs coverage:
-
-```{r plot-percent-modified-coverage}
-ggplot(coverage_data, aes(x = score, y = percent_modified)) +
-  geom_hex(bins = 50) +
-  scale_x_log10() +
-  scale_fill_viridis_c(trans = "log10") +  # <--- Scala logaritmica sui conteggi
-  labs(
-    title = "Hexbin: Percent Modified vs Coverage (log10 scale)",
-    x = "Coverage (log10 scale)",
-    y = "Methylation (%)",
-    fill = "Count (log10)"
+    y = "Modified Methylation (%)"
   ) +
   theme_minimal()
 ```
