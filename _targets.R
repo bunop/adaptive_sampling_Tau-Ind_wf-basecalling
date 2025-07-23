@@ -167,15 +167,29 @@ list(
       )
     }
   ),
-  # smooth the BSseq object
-  # TODO: parallelize this step
-  # https://www.bioconductor.org/packages/devel/bioc/vignettes/bsseq/inst/doc/bsseq_analysis.html#21_Manually_splitting_the_smoothing_computation
+  # smooth the BSseq object (parallelized)
+  tar_target(
+    name = bs.sample,
+    command = samplesheet$sample,
+    pattern = map(samplesheet)
+  ),
+  tar_target(
+    name = bs.smooth_list,
+    command = {
+      bsseq::BSmooth(
+        BSseq = BS.seq[, bs.sample],
+        BPPARAM = MulticoreParam(workers = 1)
+      )
+    },
+    pattern = map(bs.sample),
+    iteration = "list",
+  ),
   tar_target(
     name = BS.seq.fit,
-    command = bsseq::BSmooth(
-      BSseq = BS.seq,
-      BPPARAM = MulticoreParam(workers = 1)
-    )
+    command = {
+      # Combine the results from all BSmooth targets into a single BSseq object
+      do.call(BiocGenerics::combine, bs.smooth_list)
+    }
   ),
   # filter low coverage regions
   tar_target(
