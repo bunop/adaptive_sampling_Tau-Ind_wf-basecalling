@@ -8,19 +8,22 @@ library(targets)
 library(tarchetypes) # Load other packages as needed.
 library(crew)
 library(parallelly)
-library(here)
-library(readr)
-library(data.table)
-library(rtracklayer)
 
 # Set target options:
 tar_option_set(
   # Packages that your targets need for their tasks.
   packages = c(
+    "here",
     "readr",
+    "data.table",
     "dplyr",
+    "tibble",
+    "bsseq",
+    "rtracklayer",
     "IRanges",
     "GenomicRanges",
+    "BiocParallel",
+    "BiocGenerics",
     "ggplot2",
     "quarto"
   ),
@@ -137,6 +140,55 @@ list(
       })
       # Combine the list of data.tables into a single data.table
       data.table::rbindlist(df_list, use.names = TRUE, fill = TRUE)
+    }
+  ),
+  # load, sort and filter the BSseq object
+  tar_target(
+    name = BS.seq,
+    command = {
+      # define metadata for BSseq
+      metadata <- samplesheet %>%
+        dplyr::select(sample, breed) %>%
+        tibble::column_to_rownames("sample")
+
+      # read the bedmethyl files (no motif as names)
+      BS.seq <- bsseq::read.modkit(
+        samplesheet$path,
+        colData = metadata,
+        rmZeroCov = TRUE,
+        strandCollapse = TRUE
+      )
+
+      # ensure the BSseq object is sorted and filtered by gpg_buffer
+      BS.seq.sorted <- bsseq::orderBSseq(BS.seq)
+      IRanges::subsetByOverlaps(
+        BS.seq.sorted,
+        gpg_buffer
+      )
+    }
+  ),
+  # smooth the BSseq object
+  # TODO: parallelize this step
+  # https://www.bioconductor.org/packages/devel/bioc/vignettes/bsseq/inst/doc/bsseq_analysis.html#21_Manually_splitting_the_smoothing_computation
+  tar_target(
+    name = BS.seq.fit,
+    command = bsseq::BSmooth(
+      BSseq = BS.seq,
+      BPPARAM = MulticoreParam(workers = 1)
+    )
+  ),
+  # filter low coverage regions
+  tar_target(
+    name = BS.seq.ex.fit,
+    command = {
+      BS.cov <- bsseq::getCoverage(BS.seq.fit)
+
+      # keep loci with 5X coverage in at least 2 samples per breed
+      keepLoci.ex <- which(
+        rowSums(BS.cov[, BS.seq.fit$breed == "Angus"] >= 5) >= 2 &
+        rowSums(BS.cov[, BS.seq.fit$breed == "Nellore"] >= 5) >= 2
+      )
+      BS.seq.fit[keepLoci.ex, ]
     }
   ),
   tar_quarto(
