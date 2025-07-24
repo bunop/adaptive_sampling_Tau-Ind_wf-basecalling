@@ -5,6 +5,27 @@ library(stringr)
 library(IRanges)
 library(GenomicRanges)
 
+read_samplesheet <- function(samplesheet_file, results_dir) {
+  metadata <- readr::read_csv(here::here(samplesheet_file))
+
+  df <- data.frame(
+    sample = metadata$alias,
+    breed = ifelse(
+      grepl("^N", metadata$alias), "Nellore",
+      ifelse(grepl("^A", metadata$alias), "Angus", NA)
+    ),
+    path = here(
+      results_dir,
+      "ont",
+      metadata$alias,
+      "pileup",
+      paste0(metadata$alias, ".bed.gz")
+    )
+  )
+
+  return(df)
+}
+
 read_bedmethyl <- function(
     bedmethyl_file,
     sample,
@@ -62,6 +83,35 @@ read_bedmethyl <- function(
   )
 
   return(results)
+}
+
+get_coverage_data <- function(bedmethyl_list, model, n_subsample = NULL) {
+  df_list <- lapply(bedmethyl_list, function(x) {
+    dt <- data.table::data.table(
+      sample = x$sample,
+      valid_coverage = x$gr_methylation$valid_coverage,
+      percent_modified = x$gr_methylation$percent_modified
+    )
+
+    # Sample n_subsample rows from data.table
+    if (!is.null(n_subsample) && nrow(dt) > n_subsample) {
+      dt <- dt[sample(.N, n_subsample)]
+    }
+
+    # Add breed information based on sample name
+    dt[, breed := ifelse(
+      grepl("^N", sample), "Nellore",
+      ifelse(grepl("^A", sample), "Angus", NA)
+    )]
+  })
+
+  # Combine the list of data.tables into a single data.table
+  dt <- data.table::rbindlist(df_list, use.names = TRUE, fill = TRUE)
+
+  # Add model label
+  dt$model <- model
+
+  return(dt)
 }
 
 bsseq_genetrack <- function(gff_exons) {

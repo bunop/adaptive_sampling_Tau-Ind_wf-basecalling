@@ -32,37 +32,33 @@ I've just read the *bedMethyl* files using `targets`, and then I've filtered the
 in order to focus on the regions of interest, which are the CpG islands with
 a certain buffer around them. Load data about `valid_coverage` and `percent_modified`
 for each samples from `5mC_5hmC` model and with `modkit --preset traditional`
-(should be only `CpG` sites): This is not the full dataset, but a subsample of
-10,000 rows per sample (to speed up the analysis).
+(should be only `CpG` sites):
 
-```{r load-data}
-tar_load(coverage_data, store = store_path)
-summary(coverage_data)
+```{r load-data-5mC_5hmC}
+tar_load(summary_coverage_data_5mC_5hmC, store = store_path)
+summary_coverage_data_5mC_5hmC
 ```
 
-Let's plot the distribution of `valid_coverage` accross all samples:
+Let's do the same for the `5mCG_5hmCG` model:
+
+```{r load-data-5mCG_5hmCG}
+tar_load(summary_coverage_data_5mCG_5hmCG, store = store_path)
+summary_coverage_data_5mCG_5hmCG
+```
+
+Let's plot the distribution of `valid_coverage` accross all samples for the two
+models respectively:
 
 ```{r plot-valid-coverage}
-ggplot2::ggplot(coverage_data, aes(y = valid_coverage, x = sample, fill = breed)) +
-  ggplot2::geom_boxplot() +
-  ggplot2::scale_y_log10(limits = c(NA, 100)) +
-  ggplot2::labs(
-    title = "Distribution of Valid Coverage in CpG Buffer Regions",
-    y = "Valid Coverage (log10 scale)",
-  ) +
-  ggplot2::theme_minimal()
+tar_load(plot_valid_coverage, store = store_path)
+plot_valid_coverage
 ```
 
 Plot the distribution of percent modified methylation:
 
 ```{r plot-percent-modified}
-ggplot(coverage_data, aes(y = percent_modified, x = sample, fill = breed)) +
-  ggplot2::geom_boxplot() +
-  ggplot2::labs(
-    title = "Distribution of Percent Modified Methylation",
-    y = "Modified Methylation (%)"
-  ) +
-  theme_minimal()
+tar_load(plot_percent_modified, store = store_path)
+plot_percent_modified
 ```
 
 ## Search for DMRs

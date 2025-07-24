@@ -71,29 +71,22 @@ tar_source()
 # Replace the target list below with your own:
 list(
   tar_target(
-    name = samplesheet,
-    command = {
-      metadata <- readr::read_csv(here::here("conf/samplesheet-wf-basecalling.csv"))
-      df <- data.frame(
-        sample = metadata$alias,
-        breed = ifelse(
-          grepl("^N", metadata$alias), "Nellore",
-          ifelse(grepl("^A", metadata$alias), "Angus", NA)
-        ),
-        path = here(
-          "output_methylong-5mC_5hmC-traditional",
-          "ont",
-          metadata$alias,
-          "pileup",
-          paste0(metadata$alias, ".bed.gz")
-        )
-      )
-      df
-    }
+    name = samplesheet_5mC_5hmC,
+    command = read_samplesheet(
+      here::here("conf/samplesheet-wf-basecalling.csv"),
+      "output_methylong-5mC_5hmC-traditional"
+    )
+  ),
+  tar_target(
+    name = samplesheet_5mCG_5hmCG,
+    command = read_samplesheet(
+      here::here("conf/samplesheet-wf-basecalling.csv"),
+      "output_methylong-5mCG_5hmCG-traditional"
+    )
   ),
   # load annotations
   tar_target(
-    name = gpg_buffer,
+    name = cpg_buffer,
     command = rtracklayer::import.bed(
       here::here("bed/ARS-UCD2.0_CpG-Islands_unix_buffer_merged.bed")
     )
@@ -108,49 +101,100 @@ list(
       bsseq_genetrack(gff_exons)
     }
   ),
+  # read bedmethyl files for both models, 5mC_5hmC and 5mCG_5hmCG
+  # 5mC_5hmC model
   tar_target(
-    name = bedmethyl_file,
+    name = bedmethyl_file_5mC_5hmC,
     command = list(
-      sample = samplesheet$sample,
-      path = samplesheet$path
+      sample = samplesheet_5mC_5hmC$sample,
+      path = samplesheet_5mC_5hmC$path
     ),
-    pattern = map(samplesheet)
+    pattern = map(samplesheet_5mC_5hmC)
   ),
   tar_target(
-    name = bedmethyl_list,
+    name = bedmethyl_list_5mC_5hmC,
     command = {
       bedmethyl <- read_bedmethyl(
-        bedmethyl_file = bedmethyl_file$path,
-        sample = bedmethyl_file$sample,
-        filter_regions = gpg_buffer
-        # n_max = 1000 # debug
+        bedmethyl_file = bedmethyl_file_5mC_5hmC$path,
+        sample = bedmethyl_file_5mC_5hmC$sample,
+        # n_max = 1000, # debug
+        filter_regions = cpg_buffer
       )
     },
-    pattern = map(bedmethyl_file),
+    pattern = map(bedmethyl_file_5mC_5hmC),
     iteration = "list"
   ),
   tar_target(
-    name = coverage_data,
+    name = coverage_data_5mC_5hmC,
+    command = get_coverage_data(bedmethyl_list_5mC_5hmC, "5mC_5hmC")
+  ),
+  # 5mCG_5hmCG model
+  tar_target(
+    name = bedmethyl_file_5mCG_5hmCG,
+    command = list(
+      sample = samplesheet_5mCG_5hmCG$sample,
+      path = samplesheet_5mCG_5hmCG$path
+    ),
+    pattern = map(samplesheet_5mCG_5hmCG)
+  ),
+  tar_target(
+    name = bedmethyl_list_5mCG_5hmCG,
     command = {
-      # Combine the results from all bedmethyl targets into a single data frame
-      df_list <- lapply(bedmethyl_list, function(x) {
-        dt <- data.table::data.table(
-          sample = x$sample,
-          valid_coverage = x$gr_methylation$valid_coverage,
-          percent_modified = x$gr_methylation$percent_modified
-        )
-
-        # Sample 10,000 rows from each data.table
-        dt <- dt[sample(.N, 10000)]
-
-        # Add breed information based on sample name
-        dt[, breed := ifelse(
-          grepl("^N", sample), "Nellore",
-          ifelse(grepl("^A", sample), "Angus", NA)
-        )]
-      })
-      # Combine the list of data.tables into a single data.table
-      data.table::rbindlist(df_list, use.names = TRUE, fill = TRUE)
+      bedmethyl <- read_bedmethyl(
+        bedmethyl_file = bedmethyl_file_5mCG_5hmCG$path,
+        sample = bedmethyl_file_5mCG_5hmCG$sample,
+        # n_max = 1000, # debug
+        filter_regions = cpg_buffer
+      )
+    },
+    pattern = map(bedmethyl_file_5mCG_5hmCG),
+    iteration = "list"
+  ),
+  tar_target(
+    name = coverage_data_5mCG_5hmCG,
+    command = get_coverage_data(bedmethyl_list_5mCG_5hmCG, "5mCG_5hmCG")
+  ),
+  # summarize coverage data
+  tar_target(
+    name = summary_coverage_data_5mC_5hmC,
+    command = summary(coverage_data_5mC_5hmC)
+  ),
+  tar_target(
+    name = summary_coverage_data_5mCG_5hmCG,
+    command = summary(coverage_data_5mCG_5hmCG)
+  ),
+  # combine coverage data
+  tar_target(
+    name = combined_coverage_data,
+    command = rbind(coverage_data_5mC_5hmC, coverage_data_5mCG_5hmCG)
+  ),
+  # Combine coverage data from both models, then make plots
+  tar_target(
+    name = plot_valid_coverage,
+    command = {
+      ggplot2::ggplot(combined_coverage_data, aes(y = valid_coverage, x = model, fill = model)) +
+        # disable outliers for better visibility
+        ggplot2::geom_boxplot(outlier.shape = NA) +
+        facet_wrap(~ sample) +
+        ggplot2::scale_y_log10(limits = c(NA, 100)) +
+        ggplot2::labs(
+          title = "Distribution of Valid Coverage in CpG Buffer Regions",
+          y = "Valid Coverage (log10 scale)",
+        ) +
+        ggplot2::theme_minimal()
+    }
+  ),
+  tar_target(
+    name = plot_percent_modified,
+    command = {
+      ggplot2::ggplot(combined_coverage_data, aes(y = percent_modified, x = model, fill = model)) +
+        ggplot2::geom_boxplot() +
+        facet_wrap(~ sample) +
+        ggplot2::labs(
+          title = "Distribution of Percent Modified Methylation",
+          y = "Modified Methylation (%)"
+        ) +
+        ggplot2::theme_minimal()
     }
   ),
   # load, sort and filter the BSseq object
@@ -158,24 +202,32 @@ list(
     name = BS.seq,
     command = {
       # define metadata for BSseq
-      metadata <- samplesheet %>%
+      metadata <- samplesheet_5mC_5hmC %>%
         dplyr::select(sample, breed) %>%
         tibble::column_to_rownames("sample")
 
       # read the bedmethyl files (no motif as names)
       BS.seq <- bsseq::read.modkit(
-        samplesheet$path,
+        samplesheet_5mC_5hmC$path,
         colData = metadata,
         rmZeroCov = TRUE,
         strandCollapse = TRUE
       )
 
-      # ensure the BSseq object is sorted and filtered by gpg_buffer
+      # ensure the BSseq object is sorted and filtered by cpg_buffer
       BS.seq.sorted <- bsseq::orderBSseq(BS.seq)
-      IRanges::subsetByOverlaps(
+      BS.seq <- IRanges::subsetByOverlaps(
         BS.seq.sorted,
-        gpg_buffer
+        cpg_buffer
       )
+
+      # debug: take first chromosome
+      BS.seq <- IRanges::subsetByOverlaps(
+        BS.seq,
+        GenomicRanges::GRanges(seqname = "NC_037328.1", ranges = IRanges::IRanges(start = 1, end = 2*10^7))
+      )
+
+      return(BS.seq)
     }
   ),
   # smooth the BSseq object
