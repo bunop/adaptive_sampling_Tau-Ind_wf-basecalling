@@ -13,20 +13,20 @@ format:
     code-fold: true
     toc-depth: 5
     embed-resources: true  # Embed all resources directly into the HTML file
-knitr:
-  opts_chunk:
-    dpi: 100
 editor: source
 ---
 
 ```{r setup, output=FALSE}
 library(here)
 library(targets)
+library(bsseq)
 library(ggplot2)
 
 # where I can find artifacts
 store_path <- here::here("_targets")
 ```
+
+## Describing data
 
 I've just read the *bedMethyl* files using `targets`, and then I've filtered them
 in order to focus on the regions of interest, which are the CpG islands with
@@ -63,4 +63,40 @@ ggplot(coverage_data, aes(y = percent_modified, x = sample, fill = breed)) +
     y = "Modified Methylation (%)"
   ) +
   theme_minimal()
+```
+
+## Search for DMRs
+
+Plot the distribution of *t-statistic*:
+
+```{r plot-t-statistic}
+tar_load(bsseq_tstat, store = store_path)
+plot(bsseq_tstat)
+```
+
+Let's take the top 5 DMRs regions:_
+
+```{r top-dmrs}
+tar_load(dmrs, store = store_path)
+head(dmrs, 5)
+```
+
+Create a plot with the best DMR:
+
+```{r plot-top-dmr}
+tar_load(BS.seq.ex.fit, store = store_path)
+tar_load(geneTrack, store = store_path)
+
+metadata <- pData(BS.seq.ex.fit)
+metadata$col <- ifelse(metadata$breed == "Angus", "red", "blue")
+pData(BS.seq.ex.fit) <- metadata
+plotRegion(BS.seq.ex.fit, dmrs[1, ], extend = 5000, addRegions = dmrs, geneTrack = geneTrack)
+```
+
+Plot the other 4 top DMRs:
+
+```{r plot-top-5-dmrs}
+for (i in 2:5) {
+  plotRegion(BS.seq.ex.fit, dmrs[i, ], extend = 5000, addRegions = dmrs, geneTrack = geneTrack)
+}
 ```

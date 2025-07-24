@@ -91,11 +91,22 @@ list(
       df
     }
   ),
+  # load annotations
   tar_target(
     name = gpg_buffer,
     command = rtracklayer::import.bed(
       here::here("bed/ARS-UCD2.0_CpG-Islands_unix_buffer_merged.bed")
     )
+  ),
+  tar_target(
+    name = geneTrack,
+    command = {
+      gff_path <- here::here("genome/genomic.gff")
+      gff_exons <- rtracklayer::import.gff(gff_path, feature.type = "exon")
+
+      # Convert GFF exons to a data frame for BSseq (helper function)
+      bsseq_genetrack(gff_exons)
+    }
   ),
   tar_target(
     name = bedmethyl_file,
@@ -190,6 +201,35 @@ list(
         rowSums(BS.cov[, BS.seq.fit$breed == "Nellore"] >= 5) >= 2
       )
       BS.seq.fit[keepLoci.ex, ]
+    }
+  ),
+  tar_target(
+    name = bsseq_tstat,
+    command = {
+      # determine the two groups for t-statistic calculation
+      metadata <- pData(BS.seq.ex.fit)
+      group1 <- rownames(metadata)[metadata$breed == "Angus"]
+      group2 <- rownames(metadata)[metadata$breed == "Nellore"]
+
+      bsseq_tstat <- bsseq::BSmooth.tstat(
+        BS.seq.ex.fit,
+        group1 = group1,
+        group2 = group2,
+        estimate.var = "same",
+        local.correct = TRUE,
+        verbose = FALSE
+      )
+
+      # need to filter out NA values
+      idxs <- which(!is.na(bsseq_tstat@stats[, 6]))
+      bsseq_tstat[idxs, ]
+    }
+  ),
+  tar_target(
+    name = dmrs,
+    command = {
+      dmrs0 <- bsseq::dmrFinder(bsseq_tstat)
+      BiocGenerics::subset(dmrs0, n >= 3 & abs(meanDiff) >= 0.1)
     }
   ),
   tar_quarto(

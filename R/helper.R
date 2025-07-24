@@ -1,6 +1,7 @@
 
 library(readr)
 library(dplyr)
+library(stringr)
 library(IRanges)
 library(GenomicRanges)
 
@@ -61,4 +62,38 @@ read_bedmethyl <- function(
   )
 
   return(results)
+}
+
+bsseq_genetrack <- function(gff_exons) {
+  # Convert GFF exons to a data frame for BSseq
+  df <- data.frame(
+    chr = as.character(seqnames(gff_exons)),
+    start = start(gff_exons),
+    end = end(gff_exons),
+    strand = as.character(strand(gff_exons)),
+    gene_ID = gff_exons$ID,
+    gene_name = gff_exons$gene,
+    transcript_id = gff_exons$transcript_id
+  )
+
+  # counting isoforms and exon numbers
+  df <- df %>%
+    dplyr::mutate(
+      # remove versioning from transcript_id
+      transcript_base = stringr::str_remove(transcript_id, "-\\d+$")
+    ) %>%
+    dplyr::group_by(gene_name) %>%
+    dplyr::mutate(
+      exon_number = dplyr::row_number() - 1,                 # start from 0
+      isoforms = as.integer(factor(transcript_base))  # progressive isoform
+    ) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(
+      isoforms = ifelse(is.na(isoforms), 1L, isoforms)
+    )
+
+  # remove unnecessary columns
+  df <- df %>% select(-transcript_id, -transcript_base)
+
+  return(df)
 }
