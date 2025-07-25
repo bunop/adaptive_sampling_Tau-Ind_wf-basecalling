@@ -189,7 +189,11 @@ list(
           title = "Distribution of Valid Coverage in CpG Buffer Regions",
           y = "Valid Coverage (log10 scale)",
         ) +
-        ggplot2::theme_minimal()
+        ggplot2::theme_minimal() +
+        ggplot2::theme(
+          axis.text.x = ggplot2::element_blank(),
+          axis.ticks.x = ggplot2::element_blank()
+        )
     }
   ),
   tar_target(
@@ -202,7 +206,11 @@ list(
           title = "Distribution of Percent Modified Methylation",
           y = "Modified Methylation (%)"
         ) +
-        ggplot2::theme_minimal()
+        ggplot2::theme_minimal() +
+        ggplot2::theme(
+          axis.text.x = ggplot2::element_blank(),
+          axis.ticks.x = ggplot2::element_blank()
+        )
     }
   ),
   # load, sort and filter the BSseq object

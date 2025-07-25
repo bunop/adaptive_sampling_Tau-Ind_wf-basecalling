@@ -4,7 +4,7 @@ author: "Paolo Cozzi"
 date: today
 toc: true
 number-sections: true
-cache: true
+cache: false
 format:
   html:
     code-line-numbers: true
@@ -33,6 +33,10 @@ in order to focus on the regions of interest, which are the CpG islands with
 a certain buffer around them. Load data about `valid_coverage` and `percent_modified`
 for each samples from `5mC_5hmC` model and with `modkit --preset traditional`
 (should be only `CpG` sites):
+
+::: {.callout-warning}
+Note: I've subsampled this data to 100000 points for each sample for the sake of speed.
+:::
 
 ```{r load-data-5mC_5hmC}
 tar_load(summary_coverage_data_5mC_5hmC, store = store_path)
@@ -63,6 +67,10 @@ plot_percent_modified
 
 ## Search for DMRs
 
+This section is about searching for differentially methylated regions (DMRs)
+using the `bsseq` package. Data has been loaded and filtered to select regions
+with at least *5X valid coverage` in at least two samples.
+
 Plot the distribution of *t-statistic*:
 
 ```{r plot-t-statistic}
@@ -70,12 +78,16 @@ tar_load(bsseq_tstat, store = store_path)
 plot(bsseq_tstat)
 ```
 
-Let's take the top 5 DMRs regions:_
+Let's take the top 5 DMRs regions:
 
 ```{r top-dmrs}
 tar_load(dmrs, store = store_path)
 head(dmrs, 5)
 ```
+
+There are `{r} nrow(dmrs)` DMRs in total, ranked by `areaStat`, which represents
+the sum of t-statistics for each CpG site. This value reflects the DMR area,
+weighted by the number of CpGs rather than the genomic length.
 
 Create a plot with the best DMR:
 
@@ -86,13 +98,25 @@ tar_load(geneTrack, store = store_path)
 metadata <- pData(BS.seq.ex.fit)
 metadata$col <- ifelse(metadata$breed == "Angus", "red", "blue")
 pData(BS.seq.ex.fit) <- metadata
-plotRegion(BS.seq.ex.fit, dmrs[1, ], extend = 5000, addRegions = dmrs, geneTrack = geneTrack)
+plotRegion(
+  BS.seq.ex.fit,
+  dmrs[1, ],
+  extend = 5000,
+  addRegions = dmrs,
+  geneTrack = geneTrack
+)
 ```
 
 Plot the other 4 top DMRs:
 
 ```{r plot-top-5-dmrs}
 for (i in 2:5) {
-  plotRegion(BS.seq.ex.fit, dmrs[i, ], extend = 5000, addRegions = dmrs, geneTrack = geneTrack)
+  plotRegion(
+    BS.seq.ex.fit,
+    dmrs[i, ],
+    extend = 5000,
+    addRegions = dmrs,
+    geneTrack = geneTrack
+  )
 }
 ```
