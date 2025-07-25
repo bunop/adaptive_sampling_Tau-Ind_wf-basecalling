@@ -4,9 +4,9 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --time=4-00:00:00
 #SBATCH --mem=16G
-#SBATCH --error=methylong-5mC_5hmC.err
-#SBATCH --output=methylong-5mC_5hmC.out
-#SBATCH --job-name=methylong-5mC_5hmC
+#SBATCH --error=methylong-5mCG_5hmCG-cpg.err
+#SBATCH --output=methylong-5mCG_5hmCG-cpg.out
+#SBATCH --job-name=methylong-5mCG_5hmCG-cpg
 #SBATCH --account=IscrC_BioGPUPX    # account name
 #SBATCH --partition=g100_usr_prod   # partition name (see https://docs.hpc.cineca.it/hpc/galileo.html#job-managing-and-slurm-partitions)
 #SBATCH --qos=g100_qos_lprod        # quality of service (see https://docs.hpc.cineca.it/hpc/galileo.html#job-managing-and-slurm-partitions)
@@ -19,6 +19,6 @@ export CUSTOM_CONFIG_BASE=${WORK}/nf-configs
 nextflow run nf-core/methylong -r 1.0.0 \
     --custom_config_base ${CUSTOM_CONFIG_BASE} \
     -config ${CUSTOM_CONFIG_BASE}/nfcore_custom.config \
-    -config conf/custom-methylong.config \
-    -profile ibba,galileo -resume -params-file conf/params-methylong-5mC_5hmC.json \
-    --outdir output_methylong-5mC_5hmC
+    -config conf/custom-methylong-cpg.config \
+    -profile ibba,galileo -resume -params-file conf/params-methylong-5mCG_5hmCG.json \
+    --outdir output_methylong-5mCG_5hmCG-cpg
