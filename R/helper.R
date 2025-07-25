@@ -93,9 +93,16 @@ get_coverage_data <- function(bedmethyl_list, model, n_subsample = NULL) {
       percent_modified = x$gr_methylation$percent_modified
     )
 
-    # Sample n_subsample rows from data.table
+    # Subsampling balanced by sample
     if (!is.null(n_subsample) && nrow(dt) > n_subsample) {
-      dt <- dt[sample(.N, n_subsample)]
+      # Count the number of samples
+      n_sample <- dt[, .N, by = sample]
+
+      # Calculate the number of rows to sample per sample
+      n_per_sample <- floor(n_subsample / nrow(n_sample))
+      
+      # Sample rows per sample
+      dt <- dt[, .SD[sample(.N, min(.N, n_per_sample))], by = sample]
     }
 
     # Add breed information based on sample name

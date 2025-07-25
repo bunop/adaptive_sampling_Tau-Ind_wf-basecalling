@@ -126,7 +126,11 @@ list(
   ),
   tar_target(
     name = coverage_data_5mC_5hmC,
-    command = get_coverage_data(bedmethyl_list_5mC_5hmC, "5mC_5hmC")
+    command = get_coverage_data(
+      bedmethyl_list_5mC_5hmC,
+      "5mC_5hmC",
+      n_subsample = 100000 # Subsample to 100,000 rows for visualization
+    )
   ),
   # 5mCG_5hmCG model
   tar_target(
@@ -152,7 +156,11 @@ list(
   ),
   tar_target(
     name = coverage_data_5mCG_5hmCG,
-    command = get_coverage_data(bedmethyl_list_5mCG_5hmCG, "5mCG_5hmCG")
+    command = get_coverage_data(
+      bedmethyl_list_5mCG_5hmCG,
+      "5mCG_5hmCG",
+      n_subsample = 100000 # Subsample to 100,000 rows for visualization
+    )
   ),
   # summarize coverage data
   tar_target(
@@ -222,10 +230,10 @@ list(
       )
 
       # debug: take first chromosome
-      BS.seq <- IRanges::subsetByOverlaps(
-        BS.seq,
-        GenomicRanges::GRanges(seqname = "NC_037328.1", ranges = IRanges::IRanges(start = 1, end = 2*10^7))
-      )
+      # BS.seq <- IRanges::subsetByOverlaps(
+      #   BS.seq,
+      #   GenomicRanges::GRanges(seqname = "NC_037328.1", ranges = IRanges::IRanges(start = 1, end = 2*10^7))
+      # )
 
       return(BS.seq)
     }
