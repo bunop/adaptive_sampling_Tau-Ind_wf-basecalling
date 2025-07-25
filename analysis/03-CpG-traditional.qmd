@@ -65,7 +65,7 @@ tar_load(plot_percent_modified, store = store_path)
 plot_percent_modified
 ```
 
-## Search for DMRs
+## Search for DMRs (5mC_5hmC model)
 
 This section is about searching for differentially methylated regions (DMRs)
 using the `bsseq` package. Data has been loaded and filtered to select regions
@@ -73,25 +73,25 @@ with at least *5X valid coverage` in at least two samples.
 
 Plot the distribution of *t-statistic*:
 
-```{r plot-t-statistic}
-tar_load(bsseq_tstat, store = store_path)
-plot(bsseq_tstat)
+```{r plot-t-statistic-5mC_5hmC}
+tar_load(BS.5mC_5hmC.tstat, store = store_path)
+plot(BS.5mC_5hmC.tstat)
 ```
 
 Let's take the top 5 DMRs regions:
 
-```{r top-dmrs}
-tar_load(dmrs, store = store_path)
-head(dmrs, 5)
+```{r top-dmrs-5mC_5hmC}
+tar_load(dmrs.5mC_5hmC, store = store_path)
+head(dmrs.5mC_5hmC, 5)
 ```
 
-There are `{r} nrow(dmrs)` DMRs in total, ranked by `areaStat`, which represents
+There are `{r} nrow(dmrs.5mC_5hmC)` DMRs in total, ranked by `areaStat`, which represents
 the sum of t-statistics for each CpG site. This value reflects the DMR area,
 weighted by the number of CpGs rather than the genomic length.
 
 Create a plot with the best DMR:
 
-```{r plot-top-dmr}
+```{r plot-top-dmr-5mC_5hmC}
 tar_load(BS.seq.ex.fit, store = store_path)
 tar_load(geneTrack, store = store_path)
 
@@ -100,22 +100,78 @@ metadata$col <- ifelse(metadata$breed == "Angus", "red", "blue")
 pData(BS.seq.ex.fit) <- metadata
 plotRegion(
   BS.seq.ex.fit,
-  dmrs[1, ],
+  dmrs.5mC_5hmC[1, ],
   extend = 5000,
-  addRegions = dmrs,
+  addRegions = dmrs.5mC_5hmC,
   geneTrack = geneTrack
 )
 ```
 
 Plot the other 4 top DMRs:
 
-```{r plot-top-5-dmrs}
+```{r plot-top-5-dmrs-5mC_5hmC}
 for (i in 2:5) {
   plotRegion(
     BS.seq.ex.fit,
-    dmrs[i, ],
+    dmrs.5mC_5hmC[i, ],
     extend = 5000,
-    addRegions = dmrs,
+    addRegions = dmrs.5mC_5hmC,
+    geneTrack = geneTrack
+  )
+}
+```
+
+## Search for DMRs (5mCG_5hmCG model)
+
+This section is about searching for differentially methylated regions (DMRs)
+using the `bsseq` package. Data has been loaded and filtered to select regions
+with at least *5X valid coverage` in at least two samples.
+
+Plot the distribution of *t-statistic*:
+
+```{r plot-t-statistic-5mCG_5hmCG}
+tar_load(BS.5mCG_5hmCG.tstat, store = store_path)
+plot(BS.5mCG_5hmCG.tstat)
+```
+
+Let's take the top 5 DMRs regions:
+
+```{r top-dmrs-5mCG_5hmCG}
+tar_load(dmrs.5mCG_5hmCG, store = store_path)
+head(dmrs.5mCG_5hmCG, 5)
+```
+
+There are `{r} nrow(dmrs.5mCG_5hmCG)` DMRs in total, ranked by `areaStat`, which represents
+the sum of t-statistics for each CpG site. This value reflects the DMR area,
+weighted by the number of CpGs rather than the genomic length.
+
+Create a plot with the best DMR:
+
+```{r plot-top-dmr-5mCG_5hmCG}
+tar_load(BS.seq.ex.fit, store = store_path)
+tar_load(geneTrack, store = store_path)
+
+metadata <- pData(BS.seq.ex.fit)
+metadata$col <- ifelse(metadata$breed == "Angus", "red", "blue")
+pData(BS.seq.ex.fit) <- metadata
+plotRegion(
+  BS.seq.ex.fit,
+  dmrs.5mCG_5hmCG[1, ],
+  extend = 5000,
+  addRegions = dmrs.5mCG_5hmCG,
+  geneTrack = geneTrack
+)
+```
+
+Plot the other 4 top DMRs:
+
+```{r plot-top-5-dmrs-5mCG_5hmCG}
+for (i in 2:5) {
+  plotRegion(
+    BS.seq.ex.fit,
+    dmrs.5mCG_5hmCG[i, ],
+    extend = 5000,
+    addRegions = dmrs.5mCG_5hmCG,
     geneTrack = geneTrack
   )
 }

@@ -100,7 +100,7 @@ get_coverage_data <- function(bedmethyl_list, model, n_subsample = NULL) {
 
       # Calculate the number of rows to sample per sample
       n_per_sample <- floor(n_subsample / nrow(n_sample))
-      
+
       # Sample rows per sample
       dt <- dt[, .SD[sample(.N, min(.N, n_per_sample))], by = sample]
     }
@@ -119,6 +119,41 @@ get_coverage_data <- function(bedmethyl_list, model, n_subsample = NULL) {
   dt$model <- model
 
   return(dt)
+}
+
+load_bsseq <- function(samplesheet, cpg_buffer, debug=FALSE) {
+  # define metadata for BSseq
+  metadata <- samplesheet %>%
+    dplyr::select(sample, breed) %>%
+    tibble::column_to_rownames("sample")
+
+  # read the bedmethyl files (no motif as names)
+  BS.seq <- bsseq::read.modkit(
+    samplesheet$path,
+    colData = metadata,
+    rmZeroCov = TRUE,
+    strandCollapse = TRUE
+  )
+
+  # ensure the BSseq object is sorted and filtered by cpg_buffer
+  BS.seq.sorted <- bsseq::orderBSseq(BS.seq)
+  BS.seq <- IRanges::subsetByOverlaps(
+    BS.seq.sorted,
+    cpg_buffer
+  )
+
+  # debug: take first chromosome
+  if (debug) {
+    BS.seq <- IRanges::subsetByOverlaps(
+      BS.seq,
+      GenomicRanges::GRanges(
+        seqname = "NC_037328.1",
+        ranges = IRanges::IRanges(start = 1, end = 2*10^7)
+      )
+    )
+  }
+
+  return(BS.seq)
 }
 
 bsseq_genetrack <- function(gff_exons) {

@@ -214,73 +214,50 @@ list(
     }
   ),
   # load, sort and filter the BSseq object
+  # 5mC_5hmC model
   tar_target(
-    name = BS.seq,
-    command = {
-      # define metadata for BSseq
-      metadata <- samplesheet_5mC_5hmC %>%
-        dplyr::select(sample, breed) %>%
-        tibble::column_to_rownames("sample")
-
-      # read the bedmethyl files (no motif as names)
-      BS.seq <- bsseq::read.modkit(
-        samplesheet_5mC_5hmC$path,
-        colData = metadata,
-        rmZeroCov = TRUE,
-        strandCollapse = TRUE
-      )
-
-      # ensure the BSseq object is sorted and filtered by cpg_buffer
-      BS.seq.sorted <- bsseq::orderBSseq(BS.seq)
-      BS.seq <- IRanges::subsetByOverlaps(
-        BS.seq.sorted,
-        cpg_buffer
-      )
-
-      # debug: take first chromosome
-      # BS.seq <- IRanges::subsetByOverlaps(
-      #   BS.seq,
-      #   GenomicRanges::GRanges(seqname = "NC_037328.1", ranges = IRanges::IRanges(start = 1, end = 2*10^7))
-      # )
-
-      return(BS.seq)
-    }
+    name = BS.5mC_5hmC,
+    command = load_bsseq(
+      samplesheet = samplesheet_5mC_5hmC,
+      cpg_buffer = cpg_buffer,
+      debug = FALSE
+    )
   ),
   # smooth the BSseq object
   # TODO: parallelize this step
   # TODO: wait for #149 (https://github.com/hansenlab/bsseq/issues/149) to be resolved
   # https://www.bioconductor.org/packages/devel/bioc/vignettes/bsseq/inst/doc/bsseq_analysis.html#21_Manually_splitting_the_smoothing_computation
   tar_target(
-    name = BS.seq.fit,
+    name = BS.5mC_5hmC.fit,
     command = bsseq::BSmooth(
-      BSseq = BS.seq,
+      BSseq = BS.5mC_5hmC,
       BPPARAM = MulticoreParam(workers = parallelly::availableCores() - 1)
     )
   ),
   # filter low coverage regions
   tar_target(
-    name = BS.seq.ex.fit,
+    name = BS.5mC_5hmC.ex.fit,
     command = {
-      BS.cov <- bsseq::getCoverage(BS.seq.fit)
+      BS.cov <- bsseq::getCoverage(BS.5mC_5hmC.fit)
 
       # keep loci with 5X coverage in at least 2 samples per breed
       keepLoci.ex <- which(
-        rowSums(BS.cov[, BS.seq.fit$breed == "Angus"] >= 5) >= 2 &
-        rowSums(BS.cov[, BS.seq.fit$breed == "Nellore"] >= 5) >= 2
+        rowSums(BS.cov[, BS.5mC_5hmC.fit$breed == "Angus"] >= 5) >= 2 &
+        rowSums(BS.cov[, BS.5mC_5hmC.fit$breed == "Nellore"] >= 5) >= 2
       )
-      BS.seq.fit[keepLoci.ex, ]
+      BS.5mC_5hmC.fit[keepLoci.ex, ]
     }
   ),
   tar_target(
-    name = bsseq_tstat,
+    name = BS.5mC_5hmC.tstat,
     command = {
       # determine the two groups for t-statistic calculation
-      metadata <- pData(BS.seq.ex.fit)
+      metadata <- pData(BS.5mC_5hmC.ex.fit)
       group1 <- rownames(metadata)[metadata$breed == "Angus"]
       group2 <- rownames(metadata)[metadata$breed == "Nellore"]
 
       bsseq_tstat <- bsseq::BSmooth.tstat(
-        BS.seq.ex.fit,
+        BS.5mC_5hmC.ex.fit,
         group1 = group1,
         group2 = group2,
         estimate.var = "same",
@@ -294,9 +271,72 @@ list(
     }
   ),
   tar_target(
-    name = dmrs,
+    name = dmrs.5mC_5hmC,
     command = {
-      dmrs0 <- bsseq::dmrFinder(bsseq_tstat)
+      dmrs0 <- bsseq::dmrFinder(BS.5mC_5hmC.tstat)
+      BiocGenerics::subset(dmrs0, n >= 3 & abs(meanDiff) >= 0.1)
+    }
+  ),
+  # 5mCG_5hmCG model
+  tar_target(
+    name = BS.5mCG_5hmCG,
+    command = load_bsseq(
+      samplesheet = samplesheet_5mCG_5hmCG,
+      cpg_buffer = cpg_buffer,
+      debug = FALSE
+    )
+  ),
+  # smooth the BSseq object
+  # TODO: parallelize this step
+  # TODO: wait for #149 (https://github.com/hansenlab/bsseq/issues/149) to be resolved
+  # https://www.bioconductor.org/packages/devel/bioc/vignettes/bsseq/inst/doc/bsseq_analysis.html#21_Manually_splitting_the_smoothing_computation
+  tar_target(
+    name = BS.5mCG_5hmCG.fit,
+    command = bsseq::BSmooth(
+      BSseq = BS.5mCG_5hmCG,
+      BPPARAM = MulticoreParam(workers = parallelly::availableCores() - 1)
+    )
+  ),
+  # filter low coverage regions
+  tar_target(
+    name = BS.5mCG_5hmCG.ex.fit,
+    command = {
+      BS.cov <- bsseq::getCoverage(BS.5mCG_5hmCG.fit)
+
+      # keep loci with 5X coverage in at least 2 samples per breed
+      keepLoci.ex <- which(
+        rowSums(BS.cov[, BS.5mCG_5hmCG.fit$breed == "Angus"] >= 5) >= 2 &
+        rowSums(BS.cov[, BS.5mCG_5hmCG.fit$breed == "Nellore"] >= 5) >= 2
+      )
+      BS.5mCG_5hmCG.fit[keepLoci.ex, ]
+    }
+  ),
+  tar_target(
+    name = BS.5mCG_5hmCG.tstat,
+    command = {
+      # determine the two groups for t-statistic calculation
+      metadata <- pData(BS.5mCG_5hmCG.ex.fit)
+      group1 <- rownames(metadata)[metadata$breed == "Angus"]
+      group2 <- rownames(metadata)[metadata$breed == "Nellore"]
+
+      bsseq_tstat <- bsseq::BSmooth.tstat(
+        BS.5mCG_5hmCG.ex.fit,
+        group1 = group1,
+        group2 = group2,
+        estimate.var = "same",
+        local.correct = TRUE,
+        verbose = FALSE
+      )
+
+      # need to filter out NA values
+      idxs <- which(!is.na(bsseq_tstat@stats[, 6]))
+      bsseq_tstat[idxs, ]
+    }
+  ),
+  tar_target(
+    name = dmrs.5mCG_5hmCG,
+    command = {
+      dmrs0 <- bsseq::dmrFinder(BS.5mCG_5hmCG.tstat)
       BiocGenerics::subset(dmrs0, n >= 3 & abs(meanDiff) >= 0.1)
     }
   ),
