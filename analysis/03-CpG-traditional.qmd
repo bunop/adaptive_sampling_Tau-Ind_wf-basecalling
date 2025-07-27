@@ -92,14 +92,14 @@ weighted by the number of CpGs rather than the genomic length.
 Create a plot with the best DMR:
 
 ```{r plot-top-dmr-5mC}
-tar_load(BS.seq.ex.fit, store = store_path)
+tar_load(BS.5mC.fit, store = store_path)
 tar_load(geneTrack, store = store_path)
 
-metadata <- pData(BS.seq.ex.fit)
+metadata <- pData(BS.5mC.fit)
 metadata$col <- ifelse(metadata$breed == "Angus", "red", "blue")
-pData(BS.seq.ex.fit) <- metadata
+pData(BS.5mC.fit) <- metadata
 plotRegion(
-  BS.seq.ex.fit,
+  BS.5mC.fit,
   dmrs.5mC[1, ],
   extend = 5000,
   addRegions = dmrs.5mC,
@@ -112,7 +112,7 @@ Plot the other 4 top DMRs:
 ```{r plot-top-5-dmrs-5mC}
 for (i in 2:5) {
   plotRegion(
-    BS.seq.ex.fit,
+    BS.5mC.fit,
     dmrs.5mC[i, ],
     extend = 5000,
     addRegions = dmrs.5mC,
@@ -148,14 +148,14 @@ weighted by the number of CpGs rather than the genomic length.
 Create a plot with the best DMR:
 
 ```{r plot-top-dmr-5mCG}
-tar_load(BS.seq.ex.fit, store = store_path)
+tar_load(BS.5mCG.fit, store = store_path)
 tar_load(geneTrack, store = store_path)
 
-metadata <- pData(BS.seq.ex.fit)
+metadata <- pData(BS.5mCG.fit)
 metadata$col <- ifelse(metadata$breed == "Angus", "red", "blue")
-pData(BS.seq.ex.fit) <- metadata
+pData(BS.5mCG.fit) <- metadata
 plotRegion(
-  BS.seq.ex.fit,
+  BS.5mCG.fit,
   dmrs.5mCG[1, ],
   extend = 5000,
   addRegions = dmrs.5mCG,
@@ -168,7 +168,7 @@ Plot the other 4 top DMRs:
 ```{r plot-top-5-dmrs-5mCG}
 for (i in 2:5) {
   plotRegion(
-    BS.seq.ex.fit,
+    BS.5mCG.fit,
     dmrs.5mCG[i, ],
     extend = 5000,
     addRegions = dmrs.5mCG,

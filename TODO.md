@@ -17,3 +17,5 @@
     ) +
     theme_minimal()
   ```
+
+- [ ] deal with `HDF5` objects

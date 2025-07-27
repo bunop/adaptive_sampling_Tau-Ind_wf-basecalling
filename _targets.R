@@ -84,6 +84,13 @@ list(
       "output_methylong-5mCG_5hmCG-traditional"
     )
   ),
+  tar_target(
+    name = samplesheet_5mCG_5hmCG,
+    command = read_samplesheet(
+      here::here("conf/samplesheet-wf-basecalling.csv"),
+      "output_methylong-5mCG_5hmCG-cpg"
+    )
+  ),
   # load annotations
   tar_target(
     name = cpg_buffer,
@@ -101,7 +108,7 @@ list(
       bsseq_genetrack(gff_exons)
     }
   ),
-  # read bedmethyl files for both models, 5mC and 5mCG
+  # read bedmethyl files for all models, 5mC, 5mCG, 5mGC-5hmCG
   # 5mC model
   tar_target(
     name = bedmethyl_file_5mC,
@@ -162,6 +169,36 @@ list(
       n_subsample = 100000 # Subsample to 100,000 rows for visualization
     )
   ),
+  # 5mCG-5hmCG model
+  tar_target(
+    name = bedmethyl_file_5mCG_5hmCG,
+    command = list(
+      sample = samplesheet_5mCG_5hmCG$sample,
+      path = samplesheet_5mCG_5hmCG$path
+    ),
+    pattern = map(samplesheet_5mCG_5hmCG)
+  ),
+  tar_target(
+    name = bedmethyl_list_5mCG_5hmCG,
+    command = {
+      bedmethyl <- read_bedmethyl(
+        bedmethyl_file = bedmethyl_file_5mCG_5hmCG$path,
+        sample = bedmethyl_file_5mCG_5hmCG$sample,
+        # n_max = 1000, # debug
+        filter_regions = cpg_buffer
+      )
+    },
+    pattern = map(bedmethyl_file_5mCG_5hmCG),
+    iteration = "list"
+  ),
+  tar_target(
+    name = coverage_data_5mCG_5hmCG,
+    command = get_coverage_data(
+      bedmethyl_list_5mCG_5hmCG,
+      "5mCG-5hmCG",
+      n_subsample = 100000 # Subsample to 100,000 rows for visualization
+    )
+  ),
   # summarize coverage data
   tar_target(
     name = summary_coverage_data_5mC,
@@ -171,10 +208,14 @@ list(
     name = summary_coverage_data_5mCG,
     command = summary(coverage_data_5mCG)
   ),
+  tar_target(
+    name = summary_coverage_data_5mCG_5hmCG,
+    command = summary(coverage_data_5mCG_5hmCG)
+  ),
   # combine coverage data
   tar_target(
     name = combined_coverage_data,
-    command = rbind(coverage_data_5mC, coverage_data_5mCG)
+    command = rbind(coverage_data_5mC, coverage_data_5mCG, coverage_data_5mCG_5hmCG)
   ),
   # Combine coverage data from both models, then make plots
   tar_target(
@@ -231,7 +272,7 @@ list(
     name = BS.5mC.fit,
     command = bsseq::BSmooth(
       BSseq = BS.5mC,
-      BPPARAM = MulticoreParam(workers = parallelly::availableCores() - 1)
+      BPPARAM = MulticoreParam(workers = 1)
     )
   ),
   # filter low coverage regions
@@ -294,7 +335,7 @@ list(
     name = BS.5mCG.fit,
     command = bsseq::BSmooth(
       BSseq = BS.5mCG,
-      BPPARAM = MulticoreParam(workers = parallelly::availableCores() - 1)
+      BPPARAM = MulticoreParam(workers = 1)
     )
   ),
   # filter low coverage regions
@@ -337,6 +378,69 @@ list(
     name = dmrs.5mCG,
     command = {
       dmrs0 <- bsseq::dmrFinder(BS.5mCG.tstat)
+      BiocGenerics::subset(dmrs0, n >= 3 & abs(meanDiff) >= 0.1)
+    }
+  ),
+  # 5mCG-5hmCG model
+  tar_target(
+    name = BS.5mCG_5hmCG,
+    command = load_bsseq(
+      samplesheet = samplesheet_5mCG_5hmCG,
+      cpg_buffer = cpg_buffer,
+      debug = FALSE
+    )
+  ),
+  # smooth the BSseq object
+  # TODO: parallelize this step
+  # TODO: wait for #149 (https://github.com/hansenlab/bsseq/issues/149) to be resolved
+  # https://www.bioconductor.org/packages/devel/bioc/vignettes/bsseq/inst/doc/bsseq_analysis.html#21_Manually_splitting_the_smoothing_computation
+  tar_target(
+    name = BS.5mCG_5hmCG.fit,
+    command = bsseq::BSmooth(
+      BSseq = BS.5mCG_5hmCG,
+      BPPARAM = MulticoreParam(workers = 1)
+    )
+  ),
+  # filter low coverage regions
+  tar_target(
+    name = BS.5mCG_5hmCG.ex.fit,
+    command = {
+      BS.cov <- bsseq::getCoverage(BS.5mCG_5hmCG.fit)
+
+      # keep loci with 5X coverage in at least 2 samples per breed
+      keepLoci.ex <- which(
+        rowSums(BS.cov[, BS.5mCG_5hmCG.fit$breed == "Angus"] >= 5) >= 2 &
+        rowSums(BS.cov[, BS.5mCG_5hmCG.fit$breed == "Nellore"] >= 5) >= 2
+      )
+      BS.5mCG_5hmCG.fit[keepLoci.ex, ]
+    }
+  ),
+  tar_target(
+    name = BS.5mCG_5hmCG.tstat,
+    command = {
+      # determine the two groups for t-statistic calculation
+      metadata <- pData(BS.5mCG_5hmCG.ex.fit)
+      group1 <- rownames(metadata)[metadata$breed == "Angus"]
+      group2 <- rownames(metadata)[metadata$breed == "Nellore"]
+
+      bsseq_tstat <- bsseq::BSmooth.tstat(
+        BS.5mCG_5hmCG.ex.fit,
+        group1 = group1,
+        group2 = group2,
+        estimate.var = "same",
+        local.correct = TRUE,
+        verbose = FALSE
+      )
+
+      # need to filter out NA values
+      idxs <- which(!is.na(bsseq_tstat@stats[, 6]))
+      bsseq_tstat[idxs, ]
+    }
+  ),
+  tar_target(
+    name = dmrs.5mCG_5hmCG,
+    command = {
+      dmrs0 <- bsseq::dmrFinder(BS.5mCG_5hmCG.tstat)
       BiocGenerics::subset(dmrs0, n >= 3 & abs(meanDiff) >= 0.1)
     }
   ),
