@@ -143,6 +143,15 @@ list(
       n_subsample = 100000 # Subsample to 100,000 rows for visualization
     )
   ),
+  tar_target(
+    name = coverage_data_5mC_5x,
+    command = get_coverage_data(
+      bedmethyl_list_5mC,
+      "5mC",
+      n_subsample = 100000, # Subsample to 100,000 rows for visualization
+      coverage_threshold = 5 # Filter for valid coverage >= 5
+    )
+  ),
   # 5mCG model
   tar_target(
     name = bedmethyl_file_5mCG,
@@ -172,6 +181,15 @@ list(
       bedmethyl_list_5mCG,
       "5mCG",
       n_subsample = 100000 # Subsample to 100,000 rows for visualization
+    )
+  ),
+  tar_target(
+    name = coverage_data_5mCG_5x,
+    command = get_coverage_data(
+      bedmethyl_list_5mCG,
+      "5mCG",
+      n_subsample = 100000, # Subsample to 100,000 rows for visualization
+      coverage_threshold = 5 # Filter for valid coverage >= 5
     )
   ),
   # 5mCG-5hmCG model
@@ -205,6 +223,15 @@ list(
       n_subsample = 100000 # Subsample to 100,000 rows for visualization
     )
   ),
+  tar_target(
+    name = coverage_data_5mCG_5hmCG_5x,
+    command = get_coverage_data(
+      bedmethyl_list_5mCG_5hmCG,
+      "5mCG-5hmCG",
+      n_subsample = 100000, # Subsample to 100,000 rows for visualization
+      coverage_threshold = 5 # Filter for valid coverage >= 5
+    )
+  ),
   # summarize coverage data
   tar_target(
     name = summary_coverage_data_5mC,
@@ -227,6 +254,37 @@ list(
       coverage_data_5mCG_5hmCG
     )
   ),
+  # summarize coverage data (5X)
+  tar_target(
+    name = summary_coverage_data_5mC_5x,
+    command = summarize_coverage_data(
+      bedmethyl_list_5mC,
+      coverage_threshold = 5
+    )
+  ),
+  tar_target(
+    name = summary_coverage_data_5mCG_5x,
+    command = summarize_coverage_data(
+      bedmethyl_list_5mCG,
+      coverage_threshold = 5
+    )
+  ),
+  tar_target(
+    name = summary_coverage_data_5mCG_5hmCG_5x,
+    command = summarize_coverage_data(
+      bedmethyl_list_5mCG_5hmCG,
+      coverage_threshold = 5
+    )
+  ),
+  # combine coverage data
+  tar_target(
+    name = combined_coverage_data_5x,
+    command = rbind(
+      coverage_data_5mC_5x,
+      coverage_data_5mCG_5x,
+      coverage_data_5mCG_5hmCG_5x
+    )
+  ),
   # Combine coverage data from both models, then make plots
   tar_target(
     name = plot_valid_coverage,
@@ -235,7 +293,7 @@ list(
         # disable outliers for better visibility
         ggplot2::geom_boxplot(outlier.shape = NA) +
         facet_wrap(~ sample) +
-        ggplot2::scale_y_log10(limits = c(NA, 100)) +
+        ggplot2::scale_y_log10(limits = c(1, 100)) +
         ggplot2::labs(
           title = "Distribution of Valid Coverage in CpG Buffer Regions",
           y = "Valid Coverage (log10 scale)",
@@ -251,6 +309,35 @@ list(
         facet_wrap(~ sample) +
         ggplot2::labs(
           title = "Distribution of Percent Modified Methylation",
+          y = "Modified Methylation (%)"
+        ) +
+        ggplot2::theme_minimal()
+    }
+  ),
+  # Combine coverage data from both models, then make plots (5X coverage)
+  tar_target(
+    name = plot_valid_coverage_5x,
+    command = {
+      ggplot2::ggplot(combined_coverage_data_5x, aes(y = valid_coverage, x = name, fill = model)) +
+        # disable outliers for better visibility
+        ggplot2::geom_boxplot(outlier.shape = NA) +
+        facet_wrap(~ sample) +
+        ggplot2::scale_y_log10(limits = c(1, 100)) +
+        ggplot2::labs(
+          title = "Distribution of Valid Coverage in CpG Buffer Regions (>5X coverage)",
+          y = "Valid Coverage (log10 scale)",
+        ) +
+        ggplot2::theme_minimal()
+    }
+  ),
+  tar_target(
+    name = plot_percent_modified_5x,
+    command = {
+      ggplot2::ggplot(combined_coverage_data_5x, aes(y = percent_modified, x = name, fill = model)) +
+        ggplot2::geom_boxplot() +
+        facet_wrap(~ sample) +
+        ggplot2::labs(
+          title = "Distribution of Percent Modified Methylation (>5X coverage)",
           y = "Modified Methylation (%)"
         ) +
         ggplot2::theme_minimal()

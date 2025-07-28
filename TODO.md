@@ -3,8 +3,8 @@
 
 - [ ] load coverage data from `bsseq` objects
 - [x] display summaries on all *bedMethyl files*
-- [ ] plot coverage and % modified *after* filtering for 5X coverage
-- [ ] display `bsseq` object in report (the number of loci selected)
+- [x] plot coverage and % modified *after* filtering for 5X coverage
+- [x] display `bsseq` object in report (the number of loci selected)
 - [ ] describe `dmrs` objects
 - [ ] Plot a hexbin plot of percent modified methylation vs coverage:
 

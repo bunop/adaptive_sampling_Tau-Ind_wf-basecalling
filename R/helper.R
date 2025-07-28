@@ -132,12 +132,22 @@ read_bedmethyl <- function(
 # and returns a summary data.table with these statistics.
 # The function assumes that each bedmethyl object has a gr_methylation slot
 # containing valid_coverage and percent_modified fields.
-summarize_coverage_data <- function(bedmethyl_list) {
+summarize_coverage_data <- function(bedmethyl_list, coverage_threshold = NULL) {
   df_list <- lapply(bedmethyl_list, function(x) {
     dt <- data.table::data.table(
+      sample = x$sample,
+      name = x$gr_methylation$name,
       valid_coverage = x$gr_methylation$valid_coverage,
       percent_modified = x$gr_methylation$percent_modified
     )
+
+    if (!is.null(coverage_threshold)) {
+      # Filter by coverage threshold if provided
+      dt <- dt[valid_coverage >= coverage_threshold]
+    }
+
+    # return dt (it's a function in lapply!)
+    return(dt)
   })
 
   # Combine the list of data.tables into a single data.table
@@ -147,7 +157,12 @@ summarize_coverage_data <- function(bedmethyl_list) {
   return(summary(dt))
 }
 
-get_coverage_data <- function(bedmethyl_list, model, n_subsample = NULL) {
+get_coverage_data <- function(
+  bedmethyl_list,
+  model,
+  n_subsample = NULL,
+  coverage_threshold = NULL
+  ) {
   df_list <- lapply(bedmethyl_list, function(x) {
     dt <- data.table::data.table(
       sample = x$sample,
@@ -155,6 +170,11 @@ get_coverage_data <- function(bedmethyl_list, model, n_subsample = NULL) {
       valid_coverage = x$gr_methylation$valid_coverage,
       percent_modified = x$gr_methylation$percent_modified
     )
+
+    if (!is.null(coverage_threshold)) {
+      # Filter by coverage threshold if provided
+      dt <- dt[valid_coverage >= coverage_threshold]
+    }
 
     # Subsampling balanced by name
     # TODO: take the same amount of rows per name?
