@@ -153,8 +153,16 @@ summarize_coverage_data <- function(bedmethyl_list, coverage_threshold = NULL) {
   # Combine the list of data.tables into a single data.table
   dt <- data.table::rbindlist(df_list, use.names = TRUE, fill = TRUE)
 
-  # Calculate summary statistics
-  return(summary(dt))
+  results <- list(
+    n_samples = length(unique(dt$sample)),
+    n_records = nrow(dt),
+    mean_coverage = mean(dt$valid_coverage, na.rm = TRUE),
+    mean_percent_modified = mean(dt$percent_modified, na.rm = TRUE),
+    # Calculate summary statistics
+    summary = summary(dt)
+  )
+
+  return(results)
 }
 
 get_coverage_data <- function(
