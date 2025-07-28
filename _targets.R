@@ -375,7 +375,14 @@ list(
         rowSums(BS.cov[, BS.5mC.fit$breed == "Angus"] >= 5) >= 2 &
         rowSums(BS.cov[, BS.5mC.fit$breed == "Nellore"] >= 5) >= 2
       )
-      BS.5mC.fit[keepLoci.ex, ]
+      bs <- BS.5mC.fit[keepLoci.ex, ]
+
+      # Add some metadata for plotting
+      metadata <- pData(bs)
+      metadata$col <- ifelse(metadata$breed == "Angus", "red", "blue")
+      pData(bs) <- metadata
+
+      return(bs)
     }
   ),
   tar_target(
@@ -438,7 +445,14 @@ list(
         rowSums(BS.cov[, BS.5mCG.fit$breed == "Angus"] >= 5) >= 2 &
         rowSums(BS.cov[, BS.5mCG.fit$breed == "Nellore"] >= 5) >= 2
       )
-      BS.5mCG.fit[keepLoci.ex, ]
+      bs <- BS.5mCG.fit[keepLoci.ex, ]
+
+      # Add some metadata for plotting
+      metadata <- pData(bs)
+      metadata$col <- ifelse(metadata$breed == "Angus", "red", "blue")
+      pData(bs) <- metadata
+
+      return(bs)
     }
   ),
   tar_target(
@@ -501,7 +515,14 @@ list(
         rowSums(BS.cov[, BS.5mCG_5hmCG.fit$breed == "Angus"] >= 5) >= 2 &
         rowSums(BS.cov[, BS.5mCG_5hmCG.fit$breed == "Nellore"] >= 5) >= 2
       )
-      BS.5mCG_5hmCG.fit[keepLoci.ex, ]
+      bs <- BS.5mCG_5hmCG.fit[keepLoci.ex, ]
+
+      # Add some metadata for plotting
+      metadata <- pData(bs)
+      metadata$col <- ifelse(metadata$breed == "Angus", "red", "blue")
+      pData(bs) <- metadata
+
+      return(bs)
     }
   ),
   tar_target(
@@ -533,6 +554,7 @@ list(
       BiocGenerics::subset(dmrs0, n >= 3 & abs(meanDiff) >= 0.1)
     }
   ),
+  # Create a report with the results
   tar_quarto(
     name = cpg_motif_report,
     path = "analysis/03-CpG-motif.qmd",

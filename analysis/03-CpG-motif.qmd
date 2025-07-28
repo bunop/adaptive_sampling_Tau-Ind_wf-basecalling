@@ -165,15 +165,15 @@ weighted by the number of CpGs rather than the genomic length.
 
 Create a plot with the best DMR:
 
-```{r plot-top-dmr-5mC}
-tar_load(BS.5mC.fit, store = store_path)
+```{r load-gene-track}
+#| show: false
 tar_load(geneTrack, store = store_path)
+geneTrack
+```
 
-metadata <- pData(BS.5mC.fit)
-metadata$col <- ifelse(metadata$breed == "Angus", "red", "blue")
-pData(BS.5mC.fit) <- metadata
+```{r plot-top-dmr-5mC}
 plotRegion(
-  BS.5mC.fit,
+  BS.5mC.ex.fit,
   dmrs.5mC[1, ],
   extend = 5000,
   addRegions = dmrs.5mC,
@@ -186,7 +186,7 @@ Plot the other 4 top DMRs:
 ```{r plot-top-5-dmrs-5mC}
 for (i in 2:5) {
   plotRegion(
-    BS.5mC.fit,
+    BS.5mC.ex.fit,
     dmrs.5mC[i, ],
     extend = 5000,
     addRegions = dmrs.5mC,
@@ -226,14 +226,8 @@ weighted by the number of CpGs rather than the genomic length.
 Create a plot with the best DMR:
 
 ```{r plot-top-dmr-5mCG}
-tar_load(BS.5mCG.fit, store = store_path)
-tar_load(geneTrack, store = store_path)
-
-metadata <- pData(BS.5mCG.fit)
-metadata$col <- ifelse(metadata$breed == "Angus", "red", "blue")
-pData(BS.5mCG.fit) <- metadata
 plotRegion(
-  BS.5mCG.fit,
+  BS.5mCG.ex.fit,
   dmrs.5mCG[1, ],
   extend = 5000,
   addRegions = dmrs.5mCG,
@@ -246,7 +240,7 @@ Plot the other 4 top DMRs:
 ```{r plot-top-5-dmrs-5mCG}
 for (i in 2:5) {
   plotRegion(
-    BS.5mCG.fit,
+    BS.5mCG.ex.fit,
     dmrs.5mCG[i, ],
     extend = 5000,
     addRegions = dmrs.5mCG,
@@ -286,14 +280,8 @@ weighted by the number of CpGs rather than the genomic length.
 Create a plot with the best DMR:
 
 ```{r plot-top-dmr-5mCG-5hmCG}
-tar_load(BS.5mCG_5hmCG.fit, store = store_path)
-tar_load(geneTrack, store = store_path)
-
-metadata <- pData(BS.5mCG_5hmCG.fit)
-metadata$col <- ifelse(metadata$breed == "Angus", "red", "blue")
-pData(BS.5mCG_5hmCG.fit) <- metadata
 plotRegion(
-  BS.5mCG_5hmCG.fit,
+  BS.5mCG_5hmCG.ex.fit,
   dmrs.5mCG_5hmCG[1, ],
   extend = 5000,
   addRegions = dmrs.5mCG_5hmCG,
@@ -306,7 +294,7 @@ Plot the other 4 top DMRs:
 ```{r plot-top-5-dmrs-5mCG-5hmCG}
 for (i in 2:5) {
   plotRegion(
-    BS.5mCG_5hmCG.fit,
+    BS.5mCG_5hmCG.ex.fit,
     dmrs.5mCG_5hmCG[i, ],
     extend = 5000,
     addRegions = dmrs.5mCG_5hmCG,
