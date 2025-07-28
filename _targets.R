@@ -221,7 +221,7 @@ list(
   tar_target(
     name = plot_valid_coverage,
     command = {
-      ggplot2::ggplot(combined_coverage_data, aes(y = valid_coverage, x = model, fill = model)) +
+      ggplot2::ggplot(combined_coverage_data, aes(y = valid_coverage, x = name, fill = model)) +
         # disable outliers for better visibility
         ggplot2::geom_boxplot(outlier.shape = NA) +
         facet_wrap(~ sample) +
@@ -230,28 +230,20 @@ list(
           title = "Distribution of Valid Coverage in CpG Buffer Regions",
           y = "Valid Coverage (log10 scale)",
         ) +
-        ggplot2::theme_minimal() +
-        ggplot2::theme(
-          axis.text.x = ggplot2::element_blank(),
-          axis.ticks.x = ggplot2::element_blank()
-        )
+        ggplot2::theme_minimal()
     }
   ),
   tar_target(
     name = plot_percent_modified,
     command = {
-      ggplot2::ggplot(combined_coverage_data, aes(y = percent_modified, x = model, fill = model)) +
+      ggplot2::ggplot(combined_coverage_data, aes(y = percent_modified, x = name, fill = model)) +
         ggplot2::geom_boxplot() +
         facet_wrap(~ sample) +
         ggplot2::labs(
           title = "Distribution of Percent Modified Methylation",
           y = "Modified Methylation (%)"
         ) +
-        ggplot2::theme_minimal() +
-        ggplot2::theme(
-          axis.text.x = ggplot2::element_blank(),
-          axis.ticks.x = ggplot2::element_blank()
-        )
+        ggplot2::theme_minimal()
     }
   ),
   # load, sort and filter the BSseq object

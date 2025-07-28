@@ -29,11 +29,33 @@ read_samplesheet <- function(samplesheet_file, results_dir) {
 read_bedmethyl <- function(
     bedmethyl_file,
     sample,
-    columns=c("valid_coverage", "percent_modified"),
+    columns = c("name", "valid_coverage", "percent_modified"),
     filter_regions = NULL,
     n_max = Inf
   ) {
-  col_names <- c("chrom", "chromStart", "chromEnd", "name", "score", "strand", "thickStart", "thickEnd", "color", "valid_coverage", "percent_modified", "count_modified", "count_canonical", "count_other_mod", "count_delete", "count_fail", "count_diff", "count_nocall")
+
+  # define column names and types for reading the BED file
+  col_names <- c(
+    "chrom",
+    "chromStart",
+    "chromEnd",
+    "name",
+    "score",
+    "strand",
+    "thickStart",
+    "thickEnd",
+    "color",
+    "valid_coverage",
+    "percent_modified",
+    "count_modified",
+    "count_canonical",
+    "count_other_mod",
+    "count_delete",
+    "count_fail",
+    "count_diff",
+    "count_nocall"
+  )
+
   col_types <- readr::cols(
     chrom = readr::col_character(),
     chromStart = readr::col_integer(),
@@ -89,20 +111,23 @@ get_coverage_data <- function(bedmethyl_list, model, n_subsample = NULL) {
   df_list <- lapply(bedmethyl_list, function(x) {
     dt <- data.table::data.table(
       sample = x$sample,
+      name = x$gr_methylation$name,
       valid_coverage = x$gr_methylation$valid_coverage,
       percent_modified = x$gr_methylation$percent_modified
     )
 
-    # Subsampling balanced by sample
+    # Subsampling balanced by name
+    # TODO: take the same amount of rows per name?
     if (!is.null(n_subsample) && nrow(dt) > n_subsample) {
-      # Count the number of samples
-      n_sample <- dt[, .N, by = sample]
+      # Count the number of unique names
+      n_name <- dt[, .N, by = name]
 
-      # Calculate the number of rows to sample per sample
-      n_per_sample <- floor(n_subsample / nrow(n_sample))
+      # Calculate the number of rows to sample per name
+      # ie. two names -> n_subsamples / 2 elements for each name
+      n_per_name <- floor(n_subsample / nrow(n_name))
 
-      # Sample rows per sample
-      dt <- dt[, .SD[sample(.N, min(.N, n_per_sample))], by = sample]
+      # Sample rows per name
+      dt <- dt[, .SD[sample(.N, min(.N, n_per_name))], by = name]
     }
 
     # Add breed information based on sample name
@@ -121,7 +146,7 @@ get_coverage_data <- function(bedmethyl_list, model, n_subsample = NULL) {
   return(dt)
 }
 
-load_bsseq <- function(samplesheet, cpg_buffer, debug=FALSE) {
+load_bsseq <- function(samplesheet, cpg_buffer, debug = FALSE) {
   # define metadata for BSseq
   metadata <- samplesheet %>%
     dplyr::select(sample, breed) %>%
@@ -148,7 +173,7 @@ load_bsseq <- function(samplesheet, cpg_buffer, debug=FALSE) {
       BS.seq,
       GenomicRanges::GRanges(
         seqname = "NC_037328.1",
-        ranges = IRanges::IRanges(start = 1, end = 2*10^7)
+        ranges = IRanges::IRanges(start = 1, end = 2 * 10^7)
       )
     )
   }
