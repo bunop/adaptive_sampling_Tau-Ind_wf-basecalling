@@ -68,6 +68,9 @@ tar_option_set(
 tar_source()
 # tar_source("other_functions.R") # Source other scripts as needed.
 
+# A custom option to deal with debug flags
+DEBUG = FALSE
+
 # Replace the target list below with your own:
 list(
   tar_target(
@@ -125,7 +128,8 @@ list(
         bedmethyl_file = bedmethyl_file_5mC$path,
         sample = bedmethyl_file_5mC$sample,
         # n_max = 1000, # debug
-        filter_regions = cpg_buffer
+        filter_regions = cpg_buffer,
+        debug = DEBUG
       )
     },
     pattern = map(bedmethyl_file_5mC),
@@ -155,7 +159,8 @@ list(
         bedmethyl_file = bedmethyl_file_5mCG$path,
         sample = bedmethyl_file_5mCG$sample,
         # n_max = 1000, # debug
-        filter_regions = cpg_buffer
+        filter_regions = cpg_buffer,
+        debug = DEBUG
       )
     },
     pattern = map(bedmethyl_file_5mCG),
@@ -185,7 +190,8 @@ list(
         bedmethyl_file = bedmethyl_file_5mCG_5hmCG$path,
         sample = bedmethyl_file_5mCG_5hmCG$sample,
         # n_max = 1000, # debug
-        filter_regions = cpg_buffer
+        filter_regions = cpg_buffer,
+        debug = DEBUG
       )
     },
     pattern = map(bedmethyl_file_5mCG_5hmCG),
@@ -202,20 +208,24 @@ list(
   # summarize coverage data
   tar_target(
     name = summary_coverage_data_5mC,
-    command = summary(coverage_data_5mC)
+    command = summarize_coverage_data(bedmethyl_list_5mC)
   ),
   tar_target(
     name = summary_coverage_data_5mCG,
-    command = summary(coverage_data_5mCG)
+    command = summarize_coverage_data(bedmethyl_list_5mCG)
   ),
   tar_target(
     name = summary_coverage_data_5mCG_5hmCG,
-    command = summary(coverage_data_5mCG_5hmCG)
+    command = summarize_coverage_data(bedmethyl_list_5mCG_5hmCG)
   ),
   # combine coverage data
   tar_target(
     name = combined_coverage_data,
-    command = rbind(coverage_data_5mC, coverage_data_5mCG, coverage_data_5mCG_5hmCG)
+    command = rbind(
+      coverage_data_5mC,
+      coverage_data_5mCG,
+      coverage_data_5mCG_5hmCG
+    )
   ),
   # Combine coverage data from both models, then make plots
   tar_target(
@@ -437,8 +447,8 @@ list(
     }
   ),
   tar_quarto(
-    name = cpg_traditional_report,
-    path = "analysis/03-CpG-traditional.qmd",
+    name = cpg_motif_report,
+    path = "analysis/03-CpG-motif.qmd",
     quiet = FALSE
   )
 )

@@ -4,6 +4,13 @@ library(dplyr)
 library(stringr)
 library(IRanges)
 library(GenomicRanges)
+library(data.table)
+
+# define a test region for simplicity
+TEST_REGION <- GenomicRanges::GRanges(
+  seqname = "NC_037328.1",
+  ranges = IRanges::IRanges(start = 1, end = 2 * 10^7)
+)
 
 read_samplesheet <- function(samplesheet_file, results_dir) {
   metadata <- readr::read_csv(here::here(samplesheet_file))
@@ -31,7 +38,8 @@ read_bedmethyl <- function(
     sample,
     columns = c("name", "valid_coverage", "percent_modified"),
     filter_regions = NULL,
-    n_max = Inf
+    n_max = Inf,
+    debug = FALSE
   ) {
 
   # define column names and types for reading the BED file
@@ -92,9 +100,21 @@ read_bedmethyl <- function(
   mcols(gr_methylation) <- bedMethyl %>%
     dplyr::select(dplyr::all_of(columns))
 
+  # debug: take a test region
+  if (debug) {
+    gr_methylation <- IRanges::subsetByOverlaps(
+      gr_methylation,
+      TEST_REGION
+    )
+  }
+
+  # if I provide a Granges object with regions to filter,
+  # subset the methylation data
   if (!is.null(filter_regions)) {
-    hits <- GenomicRanges::findOverlaps(gr_methylation, filter_regions)
-    gr_methylation <- gr_methylation[S4Vectors::queryHits(hits)]
+    gr_methylation <- IRanges::subsetByOverlaps(
+      gr_methylation,
+      filter_regions
+    )
   }
 
   results <- list(
@@ -105,6 +125,26 @@ read_bedmethyl <- function(
   )
 
   return(results)
+}
+
+# Function to summarize coverage data from a list of bedmethyl objects
+# It extracts valid coverage and percent modified from each bedmethyl object
+# and returns a summary data.table with these statistics.
+# The function assumes that each bedmethyl object has a gr_methylation slot
+# containing valid_coverage and percent_modified fields.
+summarize_coverage_data <- function(bedmethyl_list) {
+  df_list <- lapply(bedmethyl_list, function(x) {
+    dt <- data.table::data.table(
+      valid_coverage = x$gr_methylation$valid_coverage,
+      percent_modified = x$gr_methylation$percent_modified
+    )
+  })
+
+  # Combine the list of data.tables into a single data.table
+  dt <- data.table::rbindlist(df_list, use.names = TRUE, fill = TRUE)
+
+  # Calculate summary statistics
+  return(summary(dt))
 }
 
 get_coverage_data <- function(bedmethyl_list, model, n_subsample = NULL) {

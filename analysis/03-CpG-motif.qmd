@@ -1,5 +1,5 @@
 ---
-title: "CpG Traditional Analysis"
+title: "CpG Motif Analysis"
 author: "Paolo Cozzi"
 date: today
 toc: true
@@ -26,32 +26,48 @@ library(ggplot2)
 store_path <- here::here("_targets")
 ```
 
+This is an attempt to analyze the CpG methylation data using the modkit `traditional`
+preset (searchonly for methylated on CpG motifs) and using the modkit `--cpg` option
+(search both methylation and hydroxymethylation on CpG motifs). Data comes after
+calling the ont `wf-basecalling` workflow using `5mC-5hmC` and `5mCG-5hmCG`
+models and after by running `nf-core/methylseq` pipeline by customizing the
+`MODKIT_PILEUP` nextflow step. All the data is stored in the `_targets` folder
+and can be accessed using the `targets` package.
+
 ## Describing data
 
-I've just read the *bedMethyl* files using `targets`, and then I've filtered them
-in order to focus on the regions of interest, which are the CpG islands with
-a certain buffer around them. Load data about `valid_coverage` and `percent_modified`
-for each samples from `5mC` model and with `modkit --preset traditional`
-(should be only `CpG` sites):
+Let's read the bedMethyl output and do some basic statistics: data are read directly
+from the *bedMethyl* files, and then filtered against the *CpG buffer* regions,
+the same track used when performing the *adaptive sampling* on ONT instrument.
+Let's open the `5mC-5hmC` model with `--preset traditional` first, we are focusing
+on `valid_coverage` and `percent_modified` columns:
 
-::: {.callout-warning}
-Note: I've subsampled this data to 100000 points for each sample for the sake of speed.
-:::
-
-```{r load-data-5mC}
+```{r summary-5mC}
 tar_load(summary_coverage_data_5mC, store = store_path)
 summary_coverage_data_5mC
 ```
 
-Let's do the same for the `5mCG` model:
+Here's a summary of `5mCG-5hmCG` model with `--preset traditional` as before:
 
 ```{r load-data-5mCG}
 tar_load(summary_coverage_data_5mCG, store = store_path)
 summary_coverage_data_5mCG
 ```
 
+Last summary is again on model `5mCG-5hmCG` but with `--cpg` option (call both
+methylation and hydroxymethylation on CpG motifs):
+
+```{r load-data-5mCG-5hmCG}
+tar_load(summary_coverage_data_5mCG_5hmCG, store = store_path)
+summary_coverage_data_5mCG_5hmCG
+```
+
 Let's plot the distribution of `valid_coverage` accross all samples for the two
 models respectively:
+
+::: {.callout-warning}
+Note: I've subsampled this data to 100000 points for each sample for the sake of speed.
+:::
 
 ```{r plot-valid-coverage}
 tar_load(plot_valid_coverage, store = store_path)
