@@ -4,7 +4,7 @@ author: "Paolo Cozzi"
 date: today
 toc: true
 number-sections: true
-cache: false
+cache: true
 format:
   html:
     code-line-numbers: true
@@ -20,6 +20,8 @@ editor: source
 library(here)
 library(targets)
 library(bsseq)
+library(dplyr)
+library(tidyr)
 library(ggplot2)
 
 # where I can find artifacts
@@ -302,3 +304,61 @@ for (i in 2:5) {
   )
 }
 ```
+
+## Summary of DMRs
+
+Let's summarize the DMRs found in the three models:
+
+```{r summary-dmrs}
+counts_df <- data.frame(
+  dataset = c("5mC", "5mCG", "5mCG-5hmCG"),
+  n_records = c(nrow(dmrs.5mC), nrow(dmrs.5mCG), nrow(dmrs.5mCG_5hmCG))
+)
+
+ggplot(counts_df, aes(x = dataset, y = n_records, fill = dataset)) +
+  geom_col() +
+  theme_minimal() +
+  ylab("Number of records") +
+  xlab("Dataset") +
+  ggtitle("Number of DMRs found in each dataset") +
+  theme(legend.position = "none")
+```
+
+The three models have found a different number of DMRs, with the `5mCG-5hmCG` model
+with `--cpg` option finding the less DMRs, followed by the `5mCG` model and
+finally the `5mC` model with the most DMRs. Let's explore how the DMR are:
+
+```{r explore-dmrs}
+combine_data <- function(df, name) {
+  df %>%
+    select(width, n, areaStat) %>%
+    mutate(dataset = name)
+}
+
+boxplot_data <- bind_rows(
+  combine_data(dmrs.5mC, "5mC"),
+  combine_data(dmrs.5mCG, "5mCG"),
+  combine_data(dmrs.5mCG_5hmCG, "5mCG-5hmCG")
+)
+
+boxplot_long <- boxplot_data %>%
+  pivot_longer(
+    cols = c(width, n, areaStat),
+    names_to = "variable",
+    values_to = "value"
+  )
+
+ggplot(boxplot_long, aes(x = dataset, y = value, fill = dataset)) +
+  geom_boxplot() +
+  facet_wrap(~ variable, scales = "free_y") +
+  theme_minimal() +
+  ylab("Value") +
+  xlab("Dataset") +
+  ggtitle("Boxplot of width, n and areaStat by dataset") +
+  theme(legend.position = "none") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+DMRs are compared by `width`, `n` (number of CpG sites) and `areaStat` (sum of t-statistics):
+areaStat is used to rank the DMRs, and positive and negative values mean hypermethylated
+and hypomethylated regions respectively: ideal values should be far from zero.
