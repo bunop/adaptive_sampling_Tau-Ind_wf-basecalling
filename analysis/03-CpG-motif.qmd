@@ -240,9 +240,7 @@ Create a plot with the best DMR: remember *Angus* is in *red* and *Nellore* is
 in *blue*:
 
 ```{r load-gene-track}
-#| show: false
 tar_load(geneTrack, store = store_path)
-geneTrack
 ```
 
 ```{r plot-top-dmr-5mC}
