@@ -29,26 +29,50 @@ store_path <- here::here("_targets")
 ```
 
 This is an attempt to analyze the CpG methylation data using the modkit `traditional`
-preset (searchonly for methylated on CpG motifs) and using the modkit `--cpg` option
+preset (search only for methylated on CpG motifs) and using the modkit `--cpg` option
 (search both methylation and hydroxymethylation on CpG motifs). Data comes after
 calling the ont `wf-basecalling` workflow using `5mC-5hmC` and `5mCG-5hmCG`
 models and after by running `nf-core/methylseq` pipeline by customizing the
 `MODKIT_PILEUP` nextflow step. All the data is stored in the `_targets` folder
-and can be accessed using the `targets` package.
+and can be accessed using the R `targets` package.
 
 ## Describing data
+
+Here's a summary table of the models used in this analysis, with the options
+used to call the methylation and hydroxymethylation on CpG motifs:
+
+| Model         | Option                | Description                                                                 | DMR Section                                      |
+|---------------|----------------------|-----------------------------------------------------------------------------|--------------------------------------------------|
+| 5mC-5hmC      | --preset traditional  | Detects methylation (5mC) on CpG motifs using the traditional preset. | [DMRs (5mC model)](#search-for-dmrs-5mc-model)   |
+| 5mC-5hmC      | --cpg                | Detects both methylation and hydroxymethylation on CpG motifs using the --cpg option. | [DMRs (5mC-5hmC model)](#search-for-dmrs-5mc-5hmc-model)   |
+| 5mCG-5hmCG    | --preset traditional | Detects methylation (5mCG) on CpG motifs using the traditional preset. | [DMRs (5mCG model)](#search-for-dmrs-5mcg-model) |
+| 5mCG-5hmCG    | --cpg                | Detects both methylation and hydroxymethylation on CpG motifs using the --cpg option. | [DMRs (5mCG-5hmCG model)](#search-for-dmrs-5mcg-5hmcg-model) |
+
+When using the `--preset traditional` option, the hydroxymethylation is not called
+even if the model is `5mC-5hmC` or `5mCG-5hmCG`: for simplicity we will refer to
+to `5mC` and `5mCG` models when using the `--preset traditional` option (no hydroxymethylation
+called), and to `5mC-5hmC` and `5mCG-5hmCG` models when using the `--cpg` option (both
+methylation and hydroxymethylation called).
 
 ### Raw output
 
 Let's read the bedMethyl output and do some basic statistics: data are read directly
 from the *bedMethyl* files, and then filtered against the *CpG buffer* regions,
 the same track used when performing the *adaptive sampling* on ONT instrument.
-Let's open the `5mC-5hmC` model with `--preset traditional` first, we are focusing
-on `valid_coverage` and `percent_modified` columns:
+Let's open the `5mC-5hmC` model with `--preset traditional` first (no hydroxymethylation),
+we are focusing on `valid_coverage` and `percent_modified` columns:
 
 ```{r summary-5mC}
 tar_load(summary_coverage_data_5mC, store = store_path)
 summary_coverage_data_5mC$summary
+```
+
+Here's a summary of `5mC-5hmC` model with `--cpg` option (call both
+methylation and hydroxymethylation on CpG motifs):
+
+```{r summary-5mC-5hmC}
+tar_load(summary_coverage_data_5mC_5hmC, store = store_path)
+summary_coverage_data_5mC_5hmC$summary
 ```
 
 Here's a summary of `5mCG-5hmCG` model with `--preset traditional` as before:
@@ -66,9 +90,11 @@ tar_load(summary_coverage_data_5mCG_5hmCG, store = store_path)
 summary_coverage_data_5mCG_5hmCG$summary
 ```
 
-There's a drop in the `valid_coverage` and `percent_modified` for the `5mCG-5hmCG` model with `--cpg`, while the `traditional` preset on `5mCG-5hmCG` seems to be better than `5mC-5hmCG` model. However, we need to consider that the `5mCG-5hmCG` model with `--cpg`
-has more than *270M* of data, while the other two models have around *70M* of data each.
-Let's plot the distribution of `valid_coverage` accross all samples for the three
+There's a drop in the `valid_coverage` and `percent_modified` for both models with
+`--cpg`, while the `traditional` preset on `5mCG-5hmCG` seems to be better than
+`5mC-5hmCG` model. However, we need to consider that models with `--cpg` option
+have more than *270M* of data, while the other two models have around *70M* of data each.
+Let's plot the distribution of `valid_coverage` accross all samples for the four
 models respectively:
 
 ::: {.callout-warning}
@@ -90,11 +116,20 @@ plot_percent_modified
 ### Filter by 5X valid coverage
 
 Let's filter the data to keep only regions with at least *5X valid coverage* and
-do the same statistics as before. Here's the summary for `5mC-5hmC` model:
+do the same statistics as before. Here's the summary for `5mC-5hmC` model with
+`--preset traditional`:
 
 ```{r summary-5mC-5x}
 tar_load(summary_coverage_data_5mC_5x, store = store_path)
 summary_coverage_data_5mC_5x$summary
+```
+
+And here's the summary for `5mC-5hmC` model with `--cpg` option (call both
+methylation and hydroxymethylation on CpG motifs):
+
+```{r summary-5mC-5hmC-5x}
+tar_load(summary_coverage_data_5mC_5hmC_5x, store = store_path)
+summary_coverage_data_5mC_5hmC_5x$summary
 ```
 
 The same for `5mCG-5hmCG` model with `--preset traditional` as before:
@@ -114,7 +149,9 @@ summary_coverage_data_5mCG_5hmCG_5x$summary
 
 This type of filter has moved *median* and *mean* values, but again the `traditional`
 preset on `5mCG-5hmCG` seems to be better than the other models. However, the number
-of data points in the `5mCG-5hmCG` model with `--cpg` is more than two times the other two models. Let's plot the distribution of `valid_coverage` accross all samples for the three models respectively:
+of data points in the models with `--cpg` is more than two times the other two models.
+Let's plot the distribution of `valid_coverage` accross all samples for the four
+models respectively:
 
 ::: {.callout-warning}
 Note: I've subsampled this data to 100000 points for each sample for the sake of speed.
@@ -137,18 +174,20 @@ is not so much different from the previous one.
 
 ### Stats after filtering
 
-Plot the number of records found in each dataset, both raw and after filtering
+Plot the number of records found in each dataset, both *raw* and after filtering
 for *5X valid coverage*:
 
 ```{r stats-after-filtering}
 records_df <- data.frame(
-  dataset = rep(c("5mC", "5mCG", "5mCG-5hmCG"), times = 2),
-  filter = rep(c("raw", "5X coverage"), each = 3),
+  dataset = rep(c("5mC", "5mC-5hmC", "5mCG", "5mCG-5hmCG"), times = 2),
+  filter = rep(c("raw", "5X coverage"), each = 4),
   n_records = c(
     summary_coverage_data_5mC$n_records,
+    summary_coverage_data_5mC_5hmC$n_records,
     summary_coverage_data_5mCG$n_records,
     summary_coverage_data_5mCG_5hmCG$n_records,
     summary_coverage_data_5mC_5x$n_records,
+    summary_coverage_data_5mC_5hmC_5x$n_records,
     summary_coverage_data_5mCG_5x$n_records,
     summary_coverage_data_5mCG_5hmCG_5x$n_records
   )
@@ -225,6 +264,63 @@ for (i in 2:5) {
     dmrs.5mC[i, ],
     extend = 5000,
     addRegions = dmrs.5mC,
+    geneTrack = geneTrack
+  )
+}
+```
+
+## Search for DMRs (5mC-5hmC model)
+
+This is the same af the section above, but using the `5mC-5hmC` model with `--cpg`
+option. Let's load and print the `bsseq` object:
+
+```{r print-bsseq-5mC-5hmC}
+tar_load(BS.5mC_5hmC.ex.fit, store = store_path)
+BS.5mC_5hmC.ex.fit
+```
+
+Plot the distribution of *t-statistic*:
+
+```{r plot-t-statistic-5mC-5hmC}
+tar_load(BS.5mC_5hmC.tstat, store = store_path)
+plot(BS.5mC_5hmC.tstat)
+```
+
+Let's take the top 5 DMRs regions:
+
+```{r top-dmrs-5mC-5hmC}
+tar_load(dmrs.5mC_5hmC, store = store_path)
+head(dmrs.5mC_5hmC, 5)
+```
+
+There are `{r} nrow(dmrs.5mC_5hmC)` DMRs in total, ranked by `areaStat`, which represents
+the sum of t-statistics for each CpG site. This value reflects the DMR area,
+weighted by the number of CpGs rather than the genomic length.
+
+### Plot the top DMRs
+
+Create a plot with the best DMR: remember *Angus* is in *red* and *Nellore* is
+in *blue*:
+
+```{r plot-top-dmr-5mC-5hmC}
+plotRegion(
+  BS.5mC_5hmC.ex.fit,
+  dmrs.5mC_5hmC[1, ],
+  extend = 5000,
+  addRegions = dmrs.5mC_5hmC,
+  geneTrack = geneTrack
+)
+```
+
+Plot the other 4 top DMRs:
+
+```{r plot-top-5-dmrs-5mC-5hmC}
+for (i in 2:5) {
+  plotRegion(
+    BS.5mC_5hmC.ex.fit,
+    dmrs.5mC_5hmC[i, ],
+    extend = 5000,
+    addRegions = dmrs.5mC_5hmC,
     geneTrack = geneTrack
   )
 }
@@ -346,12 +442,17 @@ for (i in 2:5) {
 
 ## Summary of DMRs
 
-Let's summarize the DMRs found in the three models:
+Let's summarize the DMRs found in the four models:
 
 ```{r summary-dmrs}
 counts_df <- data.frame(
-  dataset = c("5mC", "5mCG", "5mCG-5hmCG"),
-  n_records = c(nrow(dmrs.5mC), nrow(dmrs.5mCG), nrow(dmrs.5mCG_5hmCG))
+  dataset = c("5mC", "5mC-5hmC", "5mCG", "5mCG-5hmCG"),
+  n_records = c(
+    nrow(dmrs.5mC),
+    nrow(dmrs.5mC_5hmC),
+    nrow(dmrs.5mCG),
+    nrow(dmrs.5mCG_5hmCG)
+  )
 )
 
 ggplot(counts_df, aes(x = dataset, y = n_records, fill = dataset)) +
@@ -363,9 +464,8 @@ ggplot(counts_df, aes(x = dataset, y = n_records, fill = dataset)) +
   theme(legend.position = "none")
 ```
 
-The three models have found a different number of DMRs, with the `5mCG-5hmCG` model
-with `--cpg` option finding the less DMRs, followed by the `5mCG` model and
-finally the `5mC` model with the most DMRs. Let's explore how the DMR are:
+The four models have found a different number of DMRs, with the `--cpg` option
+finding the less DMRs. Let's explore how the DMR are:
 
 ```{r explore-dmrs}
 combine_data <- function(df, name) {
@@ -376,6 +476,7 @@ combine_data <- function(df, name) {
 
 boxplot_data <- bind_rows(
   combine_data(dmrs.5mC, "5mC"),
+  combine_data(dmrs.5mC_5hmC, "5mC-5hmC"),
   combine_data(dmrs.5mCG, "5mCG"),
   combine_data(dmrs.5mCG_5hmCG, "5mCG-5hmCG")
 )

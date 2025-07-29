@@ -99,11 +99,6 @@ singularity run $NXF_SINGULARITY_CACHEDIR/ontresearch-dorado-shae9327ad17e023b76
     --sample-sheet conf/samplesheet-wf-basecalling.csv output-5mCG_5hmCG/SAMPLE.pass.all.cram
 ```
 
-> NOTE: even if I merged all the data into a single file, `dorado` will
-> automatically split the reads into different files based on the barcodes
-> and run_id (`adaptive_sampling_Tau_Ind_1`, `Adaptive_Sampling_Tau_Ind_2`,
-> `adaptive_sampling_Tau_Ind_3`)
-
 ## Call nf-core/methylong
 
 ### Preparing samples
