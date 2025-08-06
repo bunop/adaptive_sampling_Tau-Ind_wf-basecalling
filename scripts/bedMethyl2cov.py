@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 
 import csv
 import gzip
@@ -5,9 +6,9 @@ import pathlib
 import logging
 import argparse
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 header = [
@@ -51,6 +52,7 @@ class bedMethylRecord:
     count_fail: int
     count_diff: int
     count_nocall: int
+    custom_score: int = field(init=False, default=0)
 
     def __post_init__(self):
         self.chromStart = int(self.chromStart)
@@ -68,6 +70,9 @@ class bedMethylRecord:
         self.count_diff = int(self.count_diff)
         self.count_nocall = int(self.count_nocall)
 
+        # custom fields
+        self.custom_score = self.count_modified + self.count_canonical
+
     def validate(self) -> list[str]:
         errors = []
 
@@ -81,11 +86,30 @@ class bedMethylRecord:
         Convert the bedMethyl record to a cov record.
         """
 
+        # consider this record: bedMethylRecord(chrom='NC_037328.1', chromStart=35464,
+        # chromEnd=35465, name='h', score=9, strand='-', thickStart=35464, thickEnd=35465,
+        # color='255,0,0', valid_coverage=9, percent_modified=11.11, count_modified=1,
+        # count_canonical=0, count_other_mod=8, count_delete=0, count_fail=0, count_diff=2,
+        # count_nocall=0): modkit expect to have 8 different modified call from name,
+        # and this percent modified is calculated as count_modified / valid_coverage * 100.
+        # I cannot handle count_other_mod, count_delete, count_fail, count_diff, count_nocall
+        # so I will recalculate percent_modified as count_modified / (count_canonical + count_modified) * 100
+        percent_modified = round((
+            self.count_modified / (self.count_canonical + self.count_modified)
+        ) * 100, 2)
+
+        if percent_modified != self.percent_modified:
+            logger.debug(
+                f"Percent modified mismatch: modkit:{self.percent_modified} vs self:"
+                f"{percent_modified} for {self.name} at {self.chrom}:{self.chromStart}-"
+                f"{self.chromEnd}"
+            )
+
         return [
             self.chrom,
             self.chromStart + 1,  # Convert to 1-based index
             self.chromEnd,
-            self.percent_modified,
+            percent_modified,
             self.count_modified,
             self.count_canonical
         ]
@@ -139,6 +163,13 @@ if __name__ == "__main__":
         "-s", "--score", type=int,
         help="Minimum score for filtering records (default: %(default)s)",
     )
+    parser.add_argument(
+        "--custom_score", type=int,
+        help=(
+            "Custom score for filtering records (intended as count_modified + "
+            "count_canonical - default: %(default)s)"
+        )
+    )
     args = parser.parse_args()
 
     if not args.input_folder.is_dir():
@@ -162,10 +193,13 @@ if __name__ == "__main__":
             if args.score and record.score < args.score:
                 continue
 
+            if args.custom_score and record.custom_score < args.custom_score:
+                continue
+
             if record.name not in handles:
-                output_file = output_prefix.with_suffix(f".{record.name}.cov")
+                output_file = output_prefix.with_suffix(f".{record.name}.cov.gz")
                 logger.info(f"Creating output file: {output_file}")
-                handles[record.name] = open(output_file, mode='w')
+                handles[record.name] = gzip.open(output_file, mode='wt')
                 writers[record.name] = csv.writer(handles[record.name], delimiter='\t')
 
             writer = writers[record.name]
