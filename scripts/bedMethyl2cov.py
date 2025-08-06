@@ -53,6 +53,7 @@ class bedMethylRecord:
     count_diff: int
     count_nocall: int
     custom_score: int = field(init=False, default=0)
+    custom_strand: str = field(init=False, default='unknown')
 
     def __post_init__(self):
         self.chromStart = int(self.chromStart)
@@ -72,6 +73,13 @@ class bedMethylRecord:
 
         # custom fields
         self.custom_score = self.count_modified + self.count_canonical
+
+        if self.strand == "+":
+            self.custom_strand = "positive"
+        elif self.strand == "-":
+            self.custom_strand = "negative"
+        else:
+            self.custom_strand = "unknown"
 
     def validate(self) -> list[str]:
         errors = []
@@ -93,10 +101,13 @@ class bedMethylRecord:
         # count_nocall=0): modkit expect to have 8 different modified call from name,
         # and this percent modified is calculated as count_modified / valid_coverage * 100.
         # I cannot handle count_other_mod, count_delete, count_fail, count_diff, count_nocall
-        # so I will recalculate percent_modified as count_modified / (count_canonical + count_modified) * 100
-        percent_modified = round((
-            self.count_modified / (self.count_canonical + self.count_modified)
-        ) * 100, 2)
+        # so I will recalculate percent_modified as
+        # count_modified / (count_canonical + count_modified) * 100
+        denominator = self.count_canonical + self.count_modified
+        if denominator == 0:
+            percent_modified = 0.0
+        else:
+            percent_modified = round((self.count_modified / denominator) * 100, 2)
 
         if percent_modified != self.percent_modified:
             logger.debug(
@@ -164,11 +175,15 @@ if __name__ == "__main__":
         help="Minimum score for filtering records (default: %(default)s)",
     )
     parser.add_argument(
-        "--custom_score", type=int,
+        "--custom_score", type=int, default=1,
         help=(
             "Custom score for filtering records (intended as count_modified + "
             "count_canonical - default: %(default)s)"
         )
+    )
+    parser.add_argument(
+        "--force", action='store_true', default=False,
+        help="Force overwrite of output files if they already exist (default: %(default)s)"
     )
     args = parser.parse_args()
 
@@ -177,7 +192,7 @@ if __name__ == "__main__":
             f"Input folder '{args.input_folder}' does not exist or is not a directory.")
         exit(1)
 
-    args.output.mkdir(parents=True, exist_ok=True)
+    args.output.mkdir(parents=True, exist_ok=args.force)
 
     logger.info(f"Processing input folder: {args.input_folder}")
 
@@ -196,13 +211,13 @@ if __name__ == "__main__":
             if args.custom_score and record.custom_score < args.custom_score:
                 continue
 
-            if record.name not in handles:
-                output_file = output_prefix.with_suffix(f".{record.name}.cov.gz")
+            if (record.name, record.custom_strand) not in handles:
+                output_file = output_prefix.with_suffix(f".{record.name}_{record.custom_strand}.cov.gz")
                 logger.info(f"Creating output file: {output_file}")
-                handles[record.name] = gzip.open(output_file, mode='wt')
-                writers[record.name] = csv.writer(handles[record.name], delimiter='\t')
+                handles[(record.name, record.custom_strand)] = gzip.open(output_file, mode='wt')
+                writers[(record.name, record.custom_strand)] = csv.writer(handles[(record.name, record.custom_strand)], delimiter='\t')
 
-            writer = writers[record.name]
+            writer = writers[(record.name, record.custom_strand)]
             writer.writerow(record.to_cov())
 
         for handle in handles.values():
