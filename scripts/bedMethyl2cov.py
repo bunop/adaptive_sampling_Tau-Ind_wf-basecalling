@@ -53,7 +53,6 @@ class bedMethylRecord:
     count_diff: int
     count_nocall: int
     custom_score: int = field(init=False, default=0)
-    custom_strand: str = field(init=False, default='unknown')
 
     def __post_init__(self):
         self.chromStart = int(self.chromStart)
@@ -73,13 +72,6 @@ class bedMethylRecord:
 
         # custom fields
         self.custom_score = self.count_modified + self.count_canonical
-
-        if self.strand == "+":
-            self.custom_strand = "positive"
-        elif self.strand == "-":
-            self.custom_strand = "negative"
-        else:
-            self.custom_strand = "unknown"
 
     def validate(self) -> list[str]:
         errors = []
@@ -211,13 +203,13 @@ if __name__ == "__main__":
             if args.custom_score and record.custom_score < args.custom_score:
                 continue
 
-            if (record.name, record.custom_strand) not in handles:
-                output_file = output_prefix.with_suffix(f".{record.name}_{record.custom_strand}.cov.gz")
+            if record.name not in handles:
+                output_file = output_prefix.with_suffix(f".{record.name}.cov.gz")
                 logger.info(f"Creating output file: {output_file}")
-                handles[(record.name, record.custom_strand)] = gzip.open(output_file, mode='wt')
-                writers[(record.name, record.custom_strand)] = csv.writer(handles[(record.name, record.custom_strand)], delimiter='\t')
+                handles[record.name] = gzip.open(output_file, mode='wt')
+                writers[record.name] = csv.writer(handles[record.name], delimiter='\t')
 
-            writer = writers[(record.name, record.custom_strand)]
+            writer = writers[record.name]
             writer.writerow(record.to_cov())
 
         for handle in handles.values():
