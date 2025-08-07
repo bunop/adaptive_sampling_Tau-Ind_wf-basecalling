@@ -121,7 +121,9 @@ Run the `nf-core/methylong` pipeline using the following command:
 
 ```bash
 sbatch scripts/launch-methylong-5mC_5hmC.sh
+sbatch scripts/launch-methylong-5mC_5hmC-cpg.sh
 sbatch scripts/launch-methylong-5mC_5hmC-traditional.sh
 sbatch scripts/launch-methylong-5mCG_5hmCG.sh
+sbatch scripts/launch-methylong-5mCG_5hmCG-cpg.sh
 sbatch scripts/launch-methylong-5mCG_5hmCG-traditional.sh
 ```
