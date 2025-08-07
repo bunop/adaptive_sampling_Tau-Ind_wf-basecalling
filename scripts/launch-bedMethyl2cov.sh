@@ -23,13 +23,23 @@ else
     exit 1
 fi
 
-# Execute the two commands in parallel
-scripts/bedMethyl2cov.py \
-    -i output_methylong-5mCG_5hmCG-traditional/ont/ \
-    -o output_methylong-5mCG_5hmCG-traditional/cov/ \
-    &> 5mCG_5hmCG-traditional-cov.log
+# Execute the bedMethyl2cov script with the specified input and output directories
+# CpG 5mCG and 5hmCG
+# scripts/bedMethyl2cov.py \
+#     -i output_methylong-5mCG_5hmCG-cpg/ont/ \
+#     -o output_methylong-5mCG_5hmCG-cpg/cov/ \
+#     &> 5mCG_5hmCG-cpg-cov.log
 
-sleep 5
+scripts/bedMethyl2cov.py \
+    -i output_methylong-5mCG_5hmCG-cpg/ont/ \
+    -o output_methylong-5mCG_5hmCG-cpg/cov_5X/ --custom_score 5 \
+    &> 5mCG_5hmCG-cpg-cov_5X.log
+
+# traditional 5mCG and 5hmCG
+# scripts/bedMethyl2cov.py \
+#     -i output_methylong-5mCG_5hmCG-traditional/ont/ \
+#     -o output_methylong-5mCG_5hmCG-traditional/cov/ \
+#     &> 5mCG_5hmCG-traditional-cov.log
 
 scripts/bedMethyl2cov.py \
     -i output_methylong-5mCG_5hmCG-traditional/ont/ \
